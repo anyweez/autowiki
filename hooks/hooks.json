@@ -1,0 +1,11 @@
+{
+  "hooks": [
+    {
+      "name": "wiki-auto-update",
+      "event": "post-task",
+      "script": "hooks/post-task.sh",
+      "description": "Checks if wiki update is needed after task completion",
+      "enabled": true
+    }
+  ]
+}

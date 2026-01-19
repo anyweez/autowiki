@@ -1,0 +1,42 @@
+{
+  "name": "agent-wiki",
+  "version": "1.0.0",
+  "description": "Maintains an auto-updating wiki for agent context about how repository components work",
+  "commands": [
+    {
+      "name": "wiki:init",
+      "description": "Initialize a new wiki by exploring the codebase",
+      "path": "commands/wiki/init.md"
+    },
+    {
+      "name": "wiki",
+      "description": "Update the wiki to reflect recent changes",
+      "path": "commands/wiki.md"
+    },
+    {
+      "name": "wiki:reorganize",
+      "description": "Evaluate and reorganize wiki structure if needed",
+      "path": "commands/wiki/reorganize.md"
+    },
+    {
+      "name": "wiki:serve",
+      "description": "Start a local web server to browse the wiki",
+      "path": "commands/wiki/serve.md"
+    }
+  ],
+  "agents": [
+    {
+      "name": "wiki-explorer",
+      "description": "Explores a partition of the codebase to gather documentation context",
+      "path": "agents/wiki-explorer.md"
+    },
+    {
+      "name": "wiki-coordinator",
+      "description": "Coordinates wiki updates and writes final pages",
+      "path": "agents/wiki-coordinator.md"
+    }
+  ],
+  "hooks": {
+    "post-task": "hooks/post-task.sh"
+  }
+}
