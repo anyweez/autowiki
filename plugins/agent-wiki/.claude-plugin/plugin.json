@@ -1,7 +1,7 @@
 {
   "name": "agent-wiki",
   "description": "Maintains an auto-updating wiki for agent context about how repository components work",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "author": {
     "name": "Luke Segars"
   }
