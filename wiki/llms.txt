@@ -1,0 +1,22 @@
+# agent-wiki Wiki
+
+> Agent-maintained documentation for understanding this codebase.
+
+## Quick Start
+
+This wiki is designed for AI agents working with this codebase. Start with the overview page for a high-level understanding, then explore specific concepts as needed.
+
+## Overview
+
+- [Agent Wiki](wiki/overview.md): A Claude Code plugin that maintains an auto-updating wiki for agent context about how repository components work.
+
+## Concepts
+
+- [Architecture](wiki/architecture.md): The agent-wiki plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content.
+- [Agents](wiki/agents.md): The agent-wiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation.
+
+## Reference
+
+- [Commands](wiki/commands.md): The agent-wiki plugin provides four user-invokable commands for wiki initialization, updates, reorganization, and serving.
+- [Scripts](wiki/scripts.md): The agent-wiki plugin includes two utility scripts: a Python script for generating llms.txt files and a Node.js HTTP server.
+- [Configuration](wiki/configuration.md): The agent-wiki plugin uses several configuration files and data structures to control behavior and enable auto-updates.

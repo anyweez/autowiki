@@ -1,0 +1,1239 @@
+# agent-wiki Wiki - Complete Content
+
+This file contains the complete content of all wiki pages for AI context.
+
+================================================================================
+
+FILE: wiki/overview.md
+----------------------------------------
+---
+title: Agent Wiki
+type: overview
+tags: [claude-code, plugin, documentation, wiki]
+sources:
+  - ./
+  - plugins/agent-wiki/
+---
+
+# Agent Wiki
+
+A Claude Code plugin that maintains an auto-updating wiki for agent context about how repository components work. The plugin enables AI agents to explore codebases, synthesize findings, and generate structured documentation that stays current with code changes.
+
+## Architecture
+
+```
+User Command (/agent-wiki:init, /agent-wiki:update, etc.)
+         |
+         v
++------------------+     +-------------------+
+| Command Handler  | --> | Wiki Explorer(s)  |  (parallel exploration)
+|  (commands/*.md) |     | (agents/wiki-     |
++------------------+     |  explorer.md)     |
+         |               +-------------------+
+         |                        |
+         v                        v
++------------------+     +-------------------+
+| Wiki Coordinator | <-- | Explorer Outputs  |
+| (agents/wiki-    |     | (findings, refs)  |
+|  coordinator.md) |     +-------------------+
++------------------+
+         |
+         v
++------------------+     +-------------------+
+| Generated Wiki   | --> | Supporting Tools  |
+| (wiki/*.md)      |     | - serve.js        |
++------------------+     | - generate-llms.py|
+                         +-------------------+
+```
+
+## Core Concepts
+
+- [[Commands]] - Four user-invokable commands (init, update, reorganize, serve)
+- [[Agents]] - Wiki Explorer and Wiki Coordinator sub-agents
+- [[Scripts]] - Python and Node.js utilities for llms.txt generation and wiki serving
+- [[Configuration]] - YAML config, data structures, and auto-update hooks
+
+## Getting Started
+
+For agents working with this codebase:
+
+1. Start with [[Architecture]] for system design
+2. See [[Commands]] for the main entry points
+3. Check [[Agents]] for the exploration and coordination system
+4. Review [[Configuration]] for customization options
+
+## Directory Structure
+
+```
+plugins/agent-wiki/
+  .claude-plugin/
+    plugin.json          - Plugin manifest
+  agents/
+    wiki-explorer.md     - [[Agents|Explorer agent]] instructions
+    wiki-coordinator.md  - [[Agents|Coordinator agent]] instructions
+  commands/
+    init.md              - [[Commands|/agent-wiki:init]] command
+    update.md            - [[Commands|/agent-wiki:update]] command
+    reorganize.md        - [[Commands|/agent-wiki:reorganize]] command
+    serve.md             - [[Commands|/agent-wiki:serve]] command
+  hooks/
+    post-task.sh         - [[Configuration|Auto-update hook]]
+  scripts/
+    generate-llms.py     - [[Scripts|llms.txt generator]]
+    serve.js             - [[Scripts|Wiki web server]]
+  package.json           - Node.js dependencies
+
+.claude-plugin/
+  marketplace.json       - Plugin distribution config
+```
+
+## Installation
+
+Install via Claude Code:
+
+```bash
+/plugin marketplace add github:anyweez/agent-wiki
+/plugin install agent-wiki@anyweez/agent-wiki
+```
+
+Or for local development:
+
+```bash
+claude --plugin-dir /path/to/agent-wiki
+```
+
+## Quick Reference
+
+| Command | Purpose |
+|---------|---------|
+| `/agent-wiki:init` | Bootstrap wiki from codebase |
+| `/agent-wiki:update` | Update wiki after code changes |
+| `/agent-wiki:reorganize` | Restructure wiki if needed |
+| `/agent-wiki:serve` | Browse wiki locally |
+
+================================================================================
+
+FILE: wiki/architecture.md
+----------------------------------------
+---
+title: Architecture
+type: concept
+tags: [architecture, design, flow]
+related:
+  - "[[Commands]]"
+  - "[[Agents]]"
+  - "[[Configuration]]"
+sources:
+  - plugins/agent-wiki/
+---
+
+# Architecture
+
+The agent-wiki plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content, supported by utility scripts for serving and indexing.
+
+## System Flow
+
+### Initialization Flow (/agent-wiki:init)
+
+```
+1. User runs /agent-wiki:init
+2. Command handler (commands/init.md) executes
+3. Pre-flight: Check wiki/ doesn't exist
+4. Create default wiki/.config.yml
+5. Analyze codebase structure
+6. Partition codebase for parallel exploration
+7. Launch wiki-explorer agents (up to 4 concurrent)
+8. Collect explorer outputs
+9. Launch wiki-coordinator agent
+10. Coordinator writes wiki pages
+11. Run generate-llms.py
+12. Report completion
+```
+
+### Update Flow (/agent-wiki:update)
+
+```
+1. User runs /agent-wiki:update (or auto-triggered)
+2. Command handler (commands/update.md) executes
+3. Pre-flight: Check wiki/ exists
+4. Detect changes via git diff since wiki/.last-update
+5. Map changed files to affected wiki pages via .index.json
+6. Launch targeted wiki-explorer agents
+7. Collect focused update outputs
+8. Launch wiki-coordinator in update mode
+9. Coordinator applies incremental updates
+10. Regenerate llms.txt files
+11. Update wiki/.last-update marker
+```
+
+## Component Responsibilities
+
+### Commands Layer
+
+Commands are markdown files with embedded instructions that Claude Code executes as slash commands.
+
+| File | Command | Role |
+|------|---------|------|
+| `commands/init.md` | `/agent-wiki:init` | Orchestrates full wiki creation |
+| `commands/update.md` | `/agent-wiki:update` | Orchestrates incremental updates |
+| `commands/reorganize.md` | `/agent-wiki:reorganize` | Analyzes and restructures wiki |
+| `commands/serve.md` | `/agent-wiki:serve` | Starts local web server |
+
+### Agents Layer
+
+Agents are specialized sub-agents launched by commands to perform focused tasks.
+
+| Agent | Role | Input | Output |
+|-------|------|-------|--------|
+| Wiki Explorer | Explore code partition | Directory list, context | Concept list, code refs |
+| Wiki Coordinator | Synthesize findings | Explorer outputs | Wiki pages, index |
+
+### Scripts Layer
+
+Utility scripts that support wiki functionality.
+
+| Script | Language | Purpose |
+|--------|----------|---------|
+| `generate-llms.py` | Python | Generate llms.txt index files |
+| `serve.js` | Node.js | HTTP server with wikilink support |
+
+### Data Layer
+
+Generated files that comprise the wiki.
+
+| File | Purpose |
+|------|---------|
+| `wiki/.config.yml` | Configuration settings |
+| `wiki/.index.json` | Page metadata and source mapping |
+| `wiki/.last-update` | Git commit hash of last update |
+| `wiki/llms.txt` | AI-friendly page index |
+| `wiki/llms-full.txt` | Complete content dump |
+| `wiki/*.md` | Documentation pages |
+
+## Key Design Decisions
+
+### Parallel Exploration
+
+The init command partitions the codebase and launches multiple explorer agents concurrently. This design:
+- Reduces total exploration time
+- Allows specialized focus per partition
+- Requires coordination to merge findings
+
+See `commands/init.md:49-84` for partitioning logic.
+
+### Git-Based Change Detection
+
+Updates use git to identify what changed:
+- Compares current HEAD to `wiki/.last-update` commit
+- Maps changed files to wiki pages via `source_map` in `.index.json`
+- Only re-explores affected areas
+
+See `commands/update.md:20-29` for change detection.
+
+### Wikilink System
+
+Pages connect via `[[wikilinks]]` resolved at render time:
+1. Check exact title match
+2. Check aliases in `.index.json`
+3. Fall back to slugified filename
+
+See `scripts/serve.js:121-127` for resolution logic.
+
+## Extension Points
+
+### Adding New Commands
+
+1. Create `commands/your-command.md` with frontmatter
+2. Command auto-registers via Claude Code plugin system
+3. Follow existing command structure (pre-flight, process, output)
+
+### Custom Exploration
+
+Modify `agents/wiki-explorer.md` to:
+- Change what constitutes a "concept"
+- Adjust output format
+- Add domain-specific analysis
+
+### Alternative Outputs
+
+The coordinator can be extended to generate:
+- Different documentation formats
+- API documentation
+- Dependency graphs
+
+## Related Concepts
+
+- [[Commands]] - Detailed command documentation
+- [[Agents]] - Agent instruction details
+- [[Configuration]] - Customization options
+
+================================================================================
+
+FILE: wiki/agents.md
+----------------------------------------
+---
+title: Agents
+type: concept
+tags: [agents, exploration, coordination, sub-agents]
+related:
+  - "[[Commands]]"
+  - "[[Architecture]]"
+sources:
+  - plugins/agent-wiki/agents/
+---
+
+# Agents
+
+The agent-wiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation. These agents are defined as markdown instruction files that Claude Code launches as Task sub-agents.
+
+## Wiki Explorer Agent
+
+**File**: `plugins/agent-wiki/agents/wiki-explorer.md`
+
+The explorer agent analyzes assigned code partitions and produces structured findings for the coordinator.
+
+### Role
+
+From `wiki-explorer.md:6-11`:
+- Understand what components exist and what they do
+- How they work internally
+- How they relate to other parts of the codebase
+- Key patterns, conventions, and architectural decisions
+
+### Input
+
+Explorers receive:
+```
+Partition: [list of directories/files to explore]
+Context: [brief description of expected contents]
+Existing wiki pages: [list of current pages, if updating]
+```
+
+### Exploration Process
+
+1. **Survey the partition** - List files, identify entry points, note conventions (`wiki-explorer.md:29-34`)
+2. **Read key files** - Prioritize entry points, types, core implementation, config, tests (`wiki-explorer.md:36-42`)
+3. **Identify concepts** - Find coherent units of functionality (`wiki-explorer.md:44-50`)
+4. **Document relationships** - Dependencies, dependents, data flow (`wiki-explorer.md:52-58`)
+5. **Capture code references** - Specific file paths with line numbers (`wiki-explorer.md:60-66`)
+
+### Output Format
+
+```markdown
+# Exploration Report: [Partition Name]
+
+## Summary
+Brief overview of partition contents and role.
+
+## Discovered Concepts
+
+### Concept: [Name]
+**Description**: What this concept is and does
+**Type**: feature | service | utility | integration | pattern
+**Key Files**:
+- `path/to/file.ts` - Primary implementation
+
+**Behavior**:
+- How it works
+- Key algorithms or patterns
+
+**Dependencies**:
+- Uses [[Other Concept]] for X
+
+**Code References**:
+- Main entry: `src/feature/index.ts:1`
+- Core logic: `src/feature/handler.ts:25-80`
+
+---
+
+## Cross-Partition Dependencies
+[Concepts that depend on or are depended upon by other partitions]
+
+## Suggested Wiki Structure
+[How to organize wiki pages for this partition]
+
+## Open Questions
+[Things that need clarification]
+```
+
+### Guidelines
+
+**Do**:
+- Read actual code, don't guess from filenames
+- Follow imports to understand dependencies
+- Note patterns that appear repeatedly
+- Include line numbers for key locations
+
+**Don't**:
+- Explore outside assigned partition
+- Make assumptions about unread code
+- Document obvious/trivial things
+- Include non-architectural implementation details
+
+See `wiki-explorer.md:126-138`.
+
+---
+
+## Wiki Coordinator Agent
+
+**File**: `plugins/agent-wiki/agents/wiki-coordinator.md`
+
+The coordinator synthesizes explorer findings into cohesive wiki documentation.
+
+### Role
+
+From `wiki-coordinator.md:6-12`:
+1. Synthesize findings into coherent wiki pages
+2. Resolve cross-partition dependencies
+3. Create consistent page structure
+4. Ensure all wikilinks are valid
+5. Generate supporting index files
+
+### Input
+
+Coordinators receive:
+```
+Mode: init | update
+Explorer outputs: [collected reports from all explorers]
+Existing wiki: [current pages and structure, if updating]
+Config: [wiki/.config.yml contents]
+```
+
+### Init Mode Process
+
+1. **Consolidate concepts** - Merge findings, resolve naming conflicts, identify gaps (`wiki-coordinator.md:28-33`)
+2. **Design page structure** - Create hierarchy respecting max_root_pages limit (`wiki-coordinator.md:35-52`)
+3. **Write pages** - Generate complete content with frontmatter (`wiki-coordinator.md:54-102`)
+4. **Create overview** - Special entry point page (`wiki-coordinator.md:104-150`)
+5. **Build index** - Generate `.index.json` with metadata (`wiki-coordinator.md:152-185`)
+6. **Validate** - Check all wikilinks resolve, no orphans (`wiki-coordinator.md:187-193`)
+
+### Update Mode Process
+
+1. **Identify changes** - Categorize as update/create/delete/rename (`wiki-coordinator.md:197-203`)
+2. **Apply updates** - Preserve structure, update affected sections (`wiki-coordinator.md:205-225`)
+3. **Update index** - Regenerate `.index.json` (`wiki-coordinator.md:227-229`)
+4. **Validate** - Same as init mode (`wiki-coordinator.md:231-232`)
+
+### Page Structure Rules
+
+From `wiki-coordinator.md:48-51`:
+- No more than 15 pages at root level
+- Create subdirectory if topic has 3+ related concepts
+- Every page must have at least one incoming link
+
+### Writing Guidelines
+
+**Voice and Style** (`wiki-coordinator.md:245-249`):
+- Write for AI agents as primary audience
+- Be precise and unambiguous
+- Include concrete code references
+- Avoid marketing language or fluff
+
+**Content Priorities** (`wiki-coordinator.md:251-255`):
+1. What does this do? (purpose)
+2. How does it work? (mechanism)
+3. Where is it? (code locations)
+4. How does it connect? (relationships)
+
+**Code References** (`wiki-coordinator.md:257-260`):
+- Good: `src/auth/middleware.ts:42`
+- Bad: "in the auth middleware"
+
+### Output
+
+1. All wiki page contents (as file writes)
+2. The `.index.json` content
+3. Summary of pages created/updated/deleted
+4. Any warnings (broken links, orphan pages)
+
+---
+
+## Agent Communication Pattern
+
+```
+Command
+   |
+   +-- launches --> Explorer 1 (partition A)
+   |                    |
+   +-- launches --> Explorer 2 (partition B)
+   |                    |
+   +-- launches --> Explorer 3 (partition C)
+   |                    |
+   +-- waits for all ----+
+   |
+   +-- collects outputs
+   |
+   +-- launches --> Coordinator
+                        |
+                    writes wiki pages
+```
+
+## Code References
+
+- `plugins/agent-wiki/agents/wiki-explorer.md` - Explorer instructions (156 lines)
+- `plugins/agent-wiki/agents/wiki-coordinator.md` - Coordinator instructions (269 lines)
+
+================================================================================
+
+FILE: wiki/commands.md
+----------------------------------------
+---
+title: Commands
+type: reference
+tags: [commands, cli, usage]
+related:
+  - "[[Architecture]]"
+  - "[[Agents]]"
+  - "[[Configuration]]"
+sources:
+  - plugins/agent-wiki/commands/
+---
+
+# Commands
+
+The agent-wiki plugin provides four user-invokable commands, each defined as a markdown file in `plugins/agent-wiki/commands/`. Commands are namespaced with the `agent-wiki:` prefix when installed as a plugin.
+
+## /agent-wiki:init
+
+**File**: `plugins/agent-wiki/commands/init.md`
+
+Initializes a new wiki by exploring the codebase with parallel sub-agents.
+
+### Process
+
+1. **Pre-flight checks** - Verifies wiki/ doesn't already exist (`init.md:10-14`)
+2. **Load/create configuration** - Creates `wiki/.config.yml` with defaults (`init.md:17-39`)
+3. **Discover structure** - Analyzes top-level directories, module boundaries, entry points (`init.md:41-48`)
+4. **Partition work** - Divides codebase into logical partitions for parallel exploration (`init.md:49-61`)
+5. **Launch explorers** - Spawns wiki-explorer agents (up to 4 concurrent) (`init.md:63-84`)
+6. **Coordinate** - Launches wiki-coordinator to synthesize findings (`init.md:86-101`)
+7. **Generate index** - Runs `generate-llms.py` to create llms.txt files (`init.md:103-113`)
+
+### Output
+
+Creates the wiki directory structure:
+
+```
+wiki/
+  .config.yml       - Configuration
+  .index.json       - Page index
+  llms.txt          - AI-friendly index
+  llms-full.txt     - Full content dump
+  overview.md       - Repository overview
+  [concept].md      - Concept pages
+```
+
+### Usage
+
+```
+/agent-wiki:init
+```
+
+### Error Handling
+
+- If wiki exists: Stops with message to use `/agent-wiki:update` or delete wiki/
+- If exploration fails: Logs error, continues with other partitions
+- If coordination fails: Saves raw outputs to `wiki/.raw/`
+
+---
+
+## /agent-wiki:update
+
+**File**: `plugins/agent-wiki/commands/update.md`
+
+Updates the wiki to reflect recent changes in the codebase.
+
+### Process
+
+1. **Pre-flight checks** - Verifies wiki/ exists (`update.md:10-12`)
+2. **Detect changes** - Uses git diff against `wiki/.last-update` commit (`update.md:16-29`)
+3. **Map to pages** - Consults `.index.json` source_map to find affected pages (`update.md:31-56`)
+4. **Analyze impact** - Categorizes as minor/moderate/major (`update.md:58-64`)
+5. **Launch explorers** - Targeted exploration of affected areas (`update.md:66-90`)
+6. **Apply updates** - Coordinator applies incremental changes (`update.md:92-109`)
+7. **Finalize** - Regenerates llms.txt, updates `.last-update` marker (`update.md:111-122`)
+
+### Change Detection
+
+```bash
+# From update.md:20-29
+LAST_UPDATE=$(cat wiki/.last-update 2>/dev/null || echo "")
+if [ -z "$LAST_UPDATE" ]; then
+  CHANGED_FILES=$(git diff --name-only HEAD~10)
+else
+  CHANGED_FILES=$(git diff --name-only $LAST_UPDATE HEAD)
+fi
+```
+
+### Minimal Changes Mode
+
+For trivial changes (only affects code references, not behavior):
+- Skips full exploration
+- Only updates line numbers in code references
+- Quick validation that referenced files exist
+
+See `update.md:131-137`.
+
+### Usage
+
+```
+/agent-wiki:update
+```
+
+Or configure auto-update in `wiki/.config.yml`:
+```yaml
+auto_update: true
+```
+
+---
+
+## /agent-wiki:reorganize
+
+**File**: `plugins/agent-wiki/commands/reorganize.md`
+
+Analyzes wiki structure and suggests/applies improvements.
+
+### Process
+
+1. **Analyze structure** - Gathers metrics per page (lines, sections, links, sources) (`reorganize.md:16-28`)
+2. **Identify signals** - Checks for split, merge, or restructure indicators (`reorganize.md:30-51`)
+3. **Generate recommendations** - Creates prioritized list of changes (`reorganize.md:53-87`)
+4. **User decision** - Presents options (apply all, high-priority only, review each, skip) (`reorganize.md:89-108`)
+5. **Apply changes** - Executes approved reorganizations (`reorganize.md:110-132`)
+6. **Validate** - Verifies all wikilinks resolve, regenerates index (`reorganize.md:133-139`)
+
+### Reorganization Signals
+
+**Split signals** (page too large):
+- Exceeds 500 lines
+- More than 8 top-level sections
+- Covers more than 10 source files
+- Has "and" in title
+
+**Merge signals** (pages too fragmented):
+- Under 50 lines
+- Only 1-2 incoming links
+- Overlapping sources
+- Always referenced together
+
+**Restructure signals**:
+- 20+ pages at root level
+- Deep nesting with single-page directories
+- Orphan pages
+
+### Usage
+
+```
+/agent-wiki:reorganize
+```
+
+---
+
+## /agent-wiki:serve
+
+**File**: `plugins/agent-wiki/commands/serve.md`
+
+Starts a local web server to browse the wiki in a browser.
+
+### Process
+
+1. **Check dependencies** - Verifies Node.js and npm packages (`serve.md:17-32`)
+2. **Start server** - Runs `scripts/serve.js` (`serve.md:34-38`)
+3. **Report** - Outputs URL and available features (`serve.md:40-55`)
+
+### Server Features
+
+- Markdown rendering with `markdown-it`
+- Wikilink resolution via `markdown-it-wikilinks`
+- Code syntax highlighting
+- Search across all pages
+- Dark mode support (CSS media query)
+
+### Static Export Mode
+
+For generating static HTML:
+
+```bash
+node scripts/serve.js --export --output ./wiki-html
+```
+
+### Usage
+
+```
+/agent-wiki:serve
+```
+
+Then open http://localhost:3000 in browser.
+
+---
+
+## Command File Structure
+
+All command files follow this structure:
+
+```markdown
+---
+description: Brief description for /help
+---
+
+# /wiki:command - Title
+
+Brief explanation.
+
+## Pre-flight Checks
+[Validation before execution]
+
+## Process
+[Step-by-step implementation]
+
+## Output
+[What gets created/modified]
+
+## Error Handling
+[Recovery procedures]
+```
+
+## Code References
+
+- `plugins/agent-wiki/commands/init.md` - Init command definition
+- `plugins/agent-wiki/commands/update.md` - Update command definition
+- `plugins/agent-wiki/commands/reorganize.md` - Reorganize command definition
+- `plugins/agent-wiki/commands/serve.md` - Serve command definition
+
+================================================================================
+
+FILE: wiki/configuration.md
+----------------------------------------
+---
+title: Configuration
+type: reference
+tags: [configuration, settings, hooks, auto-update]
+related:
+  - "[[Commands]]"
+  - "[[Architecture]]"
+sources:
+  - wiki/.config.yml
+  - plugins/agent-wiki/hooks/
+  - plugins/agent-wiki/.claude-plugin/
+  - .claude-plugin/
+---
+
+# Configuration
+
+The agent-wiki plugin uses several configuration files and data structures to control behavior, enable auto-updates, and support plugin distribution.
+
+## Wiki Configuration
+
+**File**: `wiki/.config.yml`
+**Created by**: `/agent-wiki:init`
+
+Controls wiki generation and update behavior.
+
+### Default Configuration
+
+From `wiki/.config.yml`:
+```yaml
+# Agent Wiki Configuration
+# This file controls wiki behavior and is created by /wiki:init
+
+# Automatically update wiki after agent tasks complete
+# Set to false for manual-only updates via /wiki
+auto_update: true
+
+# How to organize wiki pages
+# - concept: One page per identified concept (recommended)
+# - directory: Mirror source directory structure
+# - module: One page per detected module (package.json, etc.)
+page_granularity: concept
+
+# Paths to exclude from wiki exploration
+# Supports glob patterns
+exclude:
+  - node_modules/
+  - .git/
+  - dist/
+  - build/
+  - coverage/
+  - "*.min.js"
+  - "*.lock"
+  - "*.map"
+
+# Maximum pages at wiki root before suggesting subdirectories
+max_root_pages: 15
+
+# Custom concept mappings (optional)
+# Use this to group specific paths under named concepts
+# concepts:
+#   authentication:
+#     - src/auth/
+#     - src/middleware/auth*
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `auto_update` | boolean | `true` | Enable automatic wiki updates after tasks |
+| `page_granularity` | string | `concept` | Page organization strategy |
+| `exclude` | list | (see above) | Glob patterns to exclude from exploration |
+| `max_root_pages` | integer | `15` | Max pages before subdirectory suggestion |
+| `concepts` | object | (none) | Custom path-to-concept mappings |
+
+### Page Granularity Options
+
+- **concept** - One page per identified concept (recommended). Explorer agents identify logical units of functionality.
+- **directory** - Mirror source directory structure. Each significant directory gets a page.
+- **module** - One page per detected module boundary (package.json, go.mod, etc.)
+
+---
+
+## Wiki Index
+
+**File**: `wiki/.index.json`
+**Created by**: Wiki Coordinator agent
+
+JSON index mapping pages to sources for fast lookups and change detection.
+
+### Structure
+
+```json
+{
+  "version": 1,
+  "generated": "2024-01-19T12:00:00Z",
+  "pages": {
+    "overview": {
+      "path": "wiki/overview.md",
+      "title": "Repository Name",
+      "type": "overview",
+      "aliases": [],
+      "sources": ["./"],
+      "links_to": ["architecture", "commands"],
+      "linked_from": []
+    },
+    "concept-name": {
+      "path": "wiki/concept-name.md",
+      "title": "Concept Name",
+      "type": "concept",
+      "aliases": ["alt-name"],
+      "sources": ["src/concept/"],
+      "links_to": ["other-concept"],
+      "linked_from": ["overview"]
+    }
+  },
+  "source_map": {
+    "src/concept/": ["concept-name"],
+    "src/concept/specific.ts": ["concept-name", "other-concept"]
+  }
+}
+```
+
+### Fields
+
+**Root level**:
+- `version` - Index format version
+- `generated` - ISO timestamp of generation
+- `pages` - Map of slug to page metadata
+- `source_map` - Map of source paths to page slugs
+
+**Page metadata**:
+- `path` - Relative path to markdown file
+- `title` - Human-readable title
+- `type` - Page type (overview, concept, guide, reference)
+- `aliases` - Alternative names for wikilink resolution
+- `sources` - Source files/directories this page documents
+- `links_to` - Outgoing wikilinks
+- `linked_from` - Incoming wikilinks
+
+### Usage
+
+The index is used by:
+- **Update command** - Maps changed files to affected pages (`commands/update.md:34-50`)
+- **serve.js** - Resolves wikilinks (`scripts/serve.js:68-86`)
+- **Reorganize command** - Analyzes structure (`commands/reorganize.md:12-13`)
+
+---
+
+## Post-Task Hook
+
+**File**: `plugins/agent-wiki/hooks/post-task.sh`
+**Triggered by**: Claude Code after SubagentStop events
+
+Detects if wiki updates are recommended after agent tasks complete.
+
+### Behavior
+
+From `hooks/post-task.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+WIKI_DIR="wiki"
+CONFIG_FILE="$WIKI_DIR/.config.yml"
+
+# Check if wiki exists
+if [ ! -d "$WIKI_DIR" ]; then
+    exit 0  # No wiki, nothing to do
+fi
+
+# Check if auto-update is enabled
+if [ -f "$CONFIG_FILE" ]; then
+    AUTO_UPDATE=$(grep -E "^auto_update:" "$CONFIG_FILE" | awk '{print $2}')
+    if [ "$AUTO_UPDATE" = "false" ]; then
+        exit 0  # Auto-update disabled
+    fi
+fi
+
+# Check if there are relevant changes
+LAST_UPDATE_FILE="$WIKI_DIR/.last-update"
+if [ -f "$LAST_UPDATE_FILE" ]; then
+    LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
+    CHANGED_FILES=$(git diff --name-only "$LAST_UPDATE" HEAD 2>/dev/null || echo "")
+else
+    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+fi
+
+# Filter out wiki and non-code files
+RELEVANT_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^wiki/" | grep -v "\.md$" | grep -v "\.txt$" || true)
+
+if [ -z "$RELEVANT_CHANGES" ]; then
+    exit 0  # No relevant code changes
+fi
+
+# Signal to Claude Code
+echo "WIKI_UPDATE_RECOMMENDED"
+echo "Changed files since last wiki update:"
+echo "$RELEVANT_CHANGES"
+```
+
+### Logic Flow
+
+1. Check wiki/ directory exists
+2. Check `auto_update: true` in config
+3. Compare current HEAD to `wiki/.last-update`
+4. Filter to relevant code changes (excluding wiki/, .md, .txt)
+5. If changes exist, output `WIKI_UPDATE_RECOMMENDED`
+
+---
+
+## Plugin Manifest
+
+**File**: `plugins/agent-wiki/.claude-plugin/plugin.json`
+
+Registers the plugin with Claude Code.
+
+```json
+{
+  "name": "agent-wiki",
+  "description": "Maintains an auto-updating wiki for agent context about how repository components work",
+  "version": "1.0.2",
+  "author": {
+    "name": "Luke Segars"
+  }
+}
+```
+
+---
+
+## Marketplace Configuration
+
+**File**: `.claude-plugin/marketplace.json`
+
+Enables plugin distribution via Claude Code marketplace system.
+
+```json
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-wiki-marketplace",
+  "version": "1.0.0",
+  "description": "Local marketplace for agent-wiki plugin",
+  "owner": {
+    "name": "Luke Segars",
+    "email": "luke@example.com"
+  },
+  "plugins": [
+    {
+      "name": "agent-wiki",
+      "description": "Maintains an auto-updating wiki for agent context",
+      "version": "1.0.2",
+      "author": {
+        "name": "Luke Segars"
+      },
+      "source": "./plugins/agent-wiki",
+      "category": "productivity"
+    }
+  ]
+}
+```
+
+### Installation Methods
+
+**From GitHub marketplace**:
+```bash
+/plugin marketplace add github:anyweez/agent-wiki
+/plugin install agent-wiki@anyweez/agent-wiki
+```
+
+**From local directory**:
+```bash
+/plugin marketplace add /path/to/agent-wiki
+/plugin install agent-wiki@agent-wiki-marketplace
+```
+
+**Direct plugin load**:
+```bash
+claude --plugin-dir /path/to/agent-wiki
+```
+
+---
+
+## Last Update Marker
+
+**File**: `wiki/.last-update`
+**Updated by**: Update command
+
+Contains the git commit hash of the last wiki update.
+
+```
+a1b2c3d4e5f6...
+```
+
+Used by:
+- `commands/update.md` - Determines what changed since last update
+- `hooks/post-task.sh` - Checks for relevant changes
+
+Updated after successful wiki update:
+```bash
+git rev-parse HEAD > wiki/.last-update
+```
+
+## Code References
+
+- `wiki/.config.yml` - Wiki configuration (35 lines)
+- `plugins/agent-wiki/hooks/post-task.sh` - Post-task hook (45 lines)
+- `plugins/agent-wiki/.claude-plugin/plugin.json` - Plugin manifest
+- `.claude-plugin/marketplace.json` - Marketplace config
+
+================================================================================
+
+FILE: wiki/scripts.md
+----------------------------------------
+---
+title: Scripts
+type: reference
+tags: [scripts, llms-txt, server, utilities]
+related:
+  - "[[Commands]]"
+  - "[[Architecture]]"
+  - "[[Configuration]]"
+sources:
+  - plugins/agent-wiki/scripts/
+---
+
+# Scripts
+
+The agent-wiki plugin includes two utility scripts: a Python script for generating llms.txt files and a Node.js HTTP server for browsing the wiki locally.
+
+## generate-llms.py
+
+**File**: `plugins/agent-wiki/scripts/generate-llms.py`
+**Language**: Python 3.8+
+**Dependencies**: PyYAML
+
+Generates `llms.txt` and `llms-full.txt` from wiki pages for AI discoverability.
+
+### Usage
+
+```bash
+python scripts/generate-llms.py [--wiki-dir wiki/]
+```
+
+### Output Files
+
+**llms.txt** - Index file with links to all wiki pages:
+```
+# Repository Wiki
+
+> Agent-maintained documentation for understanding this codebase.
+
+## Quick Start
+This wiki is designed for AI agents...
+
+## Overview
+- [Overview](wiki/overview.md): Repository overview...
+
+## Concepts
+- [Authentication](wiki/authentication.md): Auth system...
+```
+
+**llms-full.txt** - Complete content dump:
+```
+# Repository Wiki - Complete Content
+
+================================================================================
+
+FILE: wiki/overview.md
+----------------------------------------
+[full page content]
+
+================================================================================
+```
+
+### Key Functions
+
+**`parse_frontmatter(content)`** (`generate-llms.py:21-36`)
+- Extracts YAML frontmatter and body from markdown
+- Returns tuple of (dict, str)
+
+**`get_first_paragraph(body)`** (`generate-llms.py:39-73`)
+- Extracts first non-heading paragraph as description
+- Truncates to 200 characters
+
+**`collect_wiki_pages(wiki_dir)`** (`generate-llms.py:76-110`)
+- Recursively collects all .md files
+- Skips hidden files/directories
+- Returns list of page metadata dicts
+
+**`generate_llms_txt(pages, wiki_dir, repo_name)`** (`generate-llms.py:113-174`)
+- Groups pages by type (overview, concept, guide, reference)
+- Generates formatted index content
+
+**`generate_llms_full_txt(pages, repo_name)`** (`generate-llms.py:177-204`)
+- Concatenates all page content
+- Sorts with overview first, then alphabetically
+
+**`get_repo_name(wiki_dir)`** (`generate-llms.py:207-231`)
+- Attempts to determine repo name from package.json or pyproject.toml
+- Falls back to directory name
+
+### Integration
+
+Called by commands after wiki generation/update:
+```bash
+python scripts/generate-llms.py
+```
+
+See `commands/init.md:106-108` and `commands/update.md:114-116`.
+
+---
+
+## serve.js
+
+**File**: `plugins/agent-wiki/scripts/serve.js`
+**Language**: Node.js 16+
+**Dependencies**: markdown-it, markdown-it-wikilinks
+
+HTTP server for browsing the wiki with rendered markdown and wikilink support.
+
+### Usage
+
+**Server mode** (default):
+```bash
+node scripts/serve.js [--wiki-dir wiki/] [--port 3000]
+```
+
+**Export mode** (static HTML):
+```bash
+node scripts/serve.js --export --output wiki-html/
+```
+
+### Server Features
+
+1. **Markdown rendering** - Uses markdown-it with HTML, linkify, and typographer enabled (`serve.js:18-23`)
+2. **Wikilink support** - Resolves `[[Page Name]]` syntax to proper links (`serve.js:27-39`)
+3. **Dark mode** - CSS media query for `prefers-color-scheme: dark` (`serve.js:162-170`)
+4. **Page index** - Auto-generated list at `/index` (`serve.js:242-290`)
+5. **Static file serving** - Serves llms.txt, .index.json directly (`serve.js:355-366`)
+
+### Key Functions
+
+**`parseFrontmatter(content)`** (`serve.js:89-118`)
+- Simple YAML parsing for page frontmatter
+- Handles title, tags, type fields
+
+**`resolveWikilinks(content)`** (`serve.js:121-127`)
+- Converts `[[Target]]` or `[[Target|display]]` to HTML links
+- Uses titleToPath map built from .index.json
+
+**`renderPage(pagePath)`** (`serve.js:130-239`)
+- Loads markdown file, parses frontmatter
+- Resolves wikilinks, renders to HTML
+- Returns complete HTML document with styling
+
+**`renderIndex()`** (`serve.js:242-290`)
+- Scans wiki directory recursively
+- Generates HTML page listing all wiki pages
+
+### Wikilink Resolution
+
+From `serve.js:79-86`:
+```javascript
+const titleToPath = {};
+for (const [slug, page] of Object.entries(wikiIndex.pages || {})) {
+    titleToPath[page.title.toLowerCase()] = slug;
+    titleToPath[slug] = slug;
+    for (const alias of (page.aliases || [])) {
+        titleToPath[alias.toLowerCase()] = slug;
+    }
+}
+```
+
+Resolution order:
+1. Exact title match (case-insensitive)
+2. Slug match
+3. Alias match
+4. Fall back to slugified target
+
+### Export Mode
+
+When `--export` flag is set (`serve.js:293-338`):
+1. Creates output directory
+2. Recursively processes wiki directory
+3. Renders each .md file to .html
+4. Copies non-markdown files as-is
+5. Generates index.html
+
+### Routes
+
+| Path | Response |
+|------|----------|
+| `/` | Redirects to `/overview` |
+| `/overview` | Rendered overview.md |
+| `/[page-name]` | Rendered [page-name].md |
+| `/index` | Auto-generated page list |
+| `/llms.txt` | Raw llms.txt content |
+| `/.index.json` | Raw index JSON |
+
+### Styling
+
+Inline CSS with CSS custom properties for theming (`serve.js:154-224`):
+- Light mode: white background, dark text
+- Dark mode: dark background, light text
+- Wikilinks styled with dashed underline
+
+---
+
+## Dependencies
+
+**package.json** (`plugins/agent-wiki/package.json`):
+```json
+{
+  "dependencies": {
+    "markdown-it": "^14.0.0",
+    "markdown-it-wikilinks": "^1.2.0"
+  }
+}
+```
+
+**Python requirements**:
+- Python 3.8+
+- PyYAML (`pip install pyyaml`)
+
+## Code References
+
+- `plugins/agent-wiki/scripts/generate-llms.py` - llms.txt generator (275 lines)
+- `plugins/agent-wiki/scripts/serve.js` - Wiki server (397 lines)
+- `plugins/agent-wiki/package.json` - Node.js dependencies
+
+================================================================================

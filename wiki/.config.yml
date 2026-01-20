@@ -1,0 +1,34 @@
+# Agent Wiki Configuration
+# This file controls wiki behavior and is created by /wiki:init
+
+# Automatically update wiki after agent tasks complete
+# Set to false for manual-only updates via /wiki
+auto_update: true
+
+# How to organize wiki pages
+# - concept: One page per identified concept (recommended)
+# - directory: Mirror source directory structure
+# - module: One page per detected module (package.json, etc.)
+page_granularity: concept
+
+# Paths to exclude from wiki exploration
+# Supports glob patterns
+exclude:
+  - node_modules/
+  - .git/
+  - dist/
+  - build/
+  - coverage/
+  - "*.min.js"
+  - "*.lock"
+  - "*.map"
+
+# Maximum pages at wiki root before suggesting subdirectories
+max_root_pages: 15
+
+# Custom concept mappings (optional)
+# Use this to group specific paths under named concepts
+# concepts:
+#   authentication:
+#     - src/auth/
+#     - src/middleware/auth*

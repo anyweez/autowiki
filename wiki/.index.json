@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "generated": "2026-01-19T00:00:00Z",
+  "pages": {
+    "overview": {
+      "path": "wiki/overview.md",
+      "title": "Agent Wiki",
+      "type": "overview",
+      "aliases": ["home", "index"],
+      "sources": [
+        "./",
+        "plugins/agent-wiki/"
+      ],
+      "links_to": ["commands", "agents", "scripts", "configuration", "architecture"],
+      "linked_from": []
+    },
+    "architecture": {
+      "path": "wiki/architecture.md",
+      "title": "Architecture",
+      "type": "concept",
+      "aliases": ["design", "system-design"],
+      "sources": [
+        "plugins/agent-wiki/"
+      ],
+      "links_to": ["commands", "agents", "configuration"],
+      "linked_from": ["overview"]
+    },
+    "commands": {
+      "path": "wiki/commands.md",
+      "title": "Commands",
+      "type": "reference",
+      "aliases": ["cli", "slash-commands"],
+      "sources": [
+        "plugins/agent-wiki/commands/"
+      ],
+      "links_to": ["architecture", "agents", "configuration"],
+      "linked_from": ["overview", "architecture", "agents", "scripts", "configuration"]
+    },
+    "agents": {
+      "path": "wiki/agents.md",
+      "title": "Agents",
+      "type": "concept",
+      "aliases": ["sub-agents", "explorer", "coordinator"],
+      "sources": [
+        "plugins/agent-wiki/agents/"
+      ],
+      "links_to": ["commands", "architecture"],
+      "linked_from": ["overview", "architecture", "commands"]
+    },
+    "scripts": {
+      "path": "wiki/scripts.md",
+      "title": "Scripts",
+      "type": "reference",
+      "aliases": ["utilities", "generate-llms", "serve"],
+      "sources": [
+        "plugins/agent-wiki/scripts/"
+      ],
+      "links_to": ["commands", "architecture", "configuration"],
+      "linked_from": ["overview"]
+    },
+    "configuration": {
+      "path": "wiki/configuration.md",
+      "title": "Configuration",
+      "type": "reference",
+      "aliases": ["config", "settings", "hooks"],
+      "sources": [
+        "wiki/.config.yml",
+        "plugins/agent-wiki/hooks/",
+        "plugins/agent-wiki/.claude-plugin/",
+        ".claude-plugin/"
+      ],
+      "links_to": ["commands", "architecture"],
+      "linked_from": ["overview", "architecture", "commands", "scripts"]
+    }
+  },
+  "source_map": {
+    "./": ["overview"],
+    "plugins/agent-wiki/": ["overview", "architecture"],
+    "plugins/agent-wiki/commands/": ["commands"],
+    "plugins/agent-wiki/commands/init.md": ["commands"],
+    "plugins/agent-wiki/commands/update.md": ["commands"],
+    "plugins/agent-wiki/commands/reorganize.md": ["commands"],
+    "plugins/agent-wiki/commands/serve.md": ["commands"],
+    "plugins/agent-wiki/agents/": ["agents"],
+    "plugins/agent-wiki/agents/wiki-explorer.md": ["agents"],
+    "plugins/agent-wiki/agents/wiki-coordinator.md": ["agents"],
+    "plugins/agent-wiki/scripts/": ["scripts"],
+    "plugins/agent-wiki/scripts/generate-llms.py": ["scripts"],
+    "plugins/agent-wiki/scripts/serve.js": ["scripts"],
+    "wiki/.config.yml": ["configuration"],
+    "plugins/agent-wiki/hooks/": ["configuration"],
+    "plugins/agent-wiki/hooks/post-task.sh": ["configuration"],
+    "plugins/agent-wiki/.claude-plugin/": ["configuration"],
+    "plugins/agent-wiki/.claude-plugin/plugin.json": ["configuration"],
+    ".claude-plugin/": ["configuration"],
+    ".claude-plugin/marketplace.json": ["configuration"],
+    "plugins/agent-wiki/package.json": ["scripts"]
+  }
+}
