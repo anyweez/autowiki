@@ -5,7 +5,7 @@ A Claude Code plugin that maintains an auto-updating wiki for agent context abou
 ## Features
 
 - **`/agent-wiki:wiki:init`** - Initialize a new wiki by exploring the codebase with parallel sub-agents
-- **`/agent-wiki:wiki`** - Update the wiki to reflect recent code changes
+- **`/agent-wiki:update`** - Update the wiki to reflect recent code changes
 - **`/agent-wiki:wiki:reorganize`** - Analyze and restructure the wiki if needed
 - **`/agent-wiki:wiki:serve`** - Start a local web server to browse the wiki
 
@@ -71,7 +71,7 @@ This will:
 After making code changes:
 
 ```
-/agent-wiki:wiki
+/agent-wiki:update
 ```
 
 By default, the wiki auto-updates after agent tasks complete. Disable this in `wiki/.config.yml`:
