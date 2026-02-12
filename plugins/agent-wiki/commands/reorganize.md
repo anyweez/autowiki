@@ -149,7 +149,7 @@ Changes applied:
 - Archived 1 obsolete page
 
 All wikilinks validated.
-Run `/wiki:serve` to browse the updated structure.
+Run `npx autowiki` to browse the updated structure.
 ```
 
 ## No Changes Needed

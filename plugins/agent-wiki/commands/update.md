@@ -144,7 +144,7 @@ Wiki updated!
 - Created: [list of new pages, if any]
 - Removed: [list of removed pages, if any]
 
-Run `/wiki:serve` to browse or `/wiki:reorganize` to restructure.
+Run `npx autowiki` to browse or `/wiki:reorganize` to restructure.
 ```
 
 ## Error Recovery

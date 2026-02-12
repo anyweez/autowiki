@@ -113,17 +113,22 @@ This creates:
 
 ## Output Structure
 
+Pages are organized into subdirectories by type. These directories map directly to URL paths when browsing with `npx autowiki` (e.g., `wiki/concepts/architecture.md` is served at `/concepts/architecture`).
+
 ```
 wiki/
 ├── .config.yml           # Configuration
 ├── .index.json           # Page index for fast lookups
 ├── llms.txt              # AI-friendly index
 ├── llms-full.txt         # Full content dump
-├── overview.md           # Repository overview (always created)
-├── architecture.md       # System architecture
-├── [concept-pages].md    # One per identified concept
-└── [subdirs]/            # Sub-pages for complex concepts
-    └── [detail-pages].md
+├── overview.md           # Repository overview (always at root)
+├── concepts/             # Conceptual explanations (type: concept)
+│   ├── architecture.md
+│   └── [concept].md
+├── guides/               # How-to guides (type: guide)
+│   └── [guide].md
+└── reference/            # Reference documentation (type: reference)
+    └── [reference].md
 ```
 
 ## Wiki Page Format
@@ -184,6 +189,6 @@ When complete, inform the user:
 ```
 Wiki initialized successfully!
 - Created X pages covering Y concepts
-- Run `/wiki:serve` to browse locally
+- Run `npx autowiki` to browse locally
 - Wiki will auto-update after tasks (disable in wiki/.config.yml)
 ```

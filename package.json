@@ -1,0 +1,26 @@
+{
+  "name": "autowiki",
+  "version": "1.0.0",
+  "description": "Browse auto-generated wiki documentation in your browser",
+  "bin": {
+    "autowiki": "./bin/autowiki.js"
+  },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
+  "dependencies": {
+    "markdown-it": "^14.0.0",
+    "markdown-it-wikilinks": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "wiki",
+    "documentation",
+    "markdown",
+    "codebase"
+  ],
+  "license": "MIT"
+}

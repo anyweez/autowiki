@@ -34,21 +34,25 @@ Merge explorer findings:
 
 #### 2. Design Page Structure
 
-Based on consolidated concepts:
+Based on consolidated concepts, organize pages into subdirectories by type. These directories map directly to URL paths when browsing with `npx autowiki` (e.g., `concepts/architecture` serves at `/concepts/architecture`).
+
 ```
 wiki/
-├── overview.md           # Always created - repo summary
-├── architecture.md       # System design overview
-├── [concept].md          # One per major concept
-└── [topic]/              # Subdirectory for complex areas
-    ├── overview.md       # Topic introduction
-    └── [sub-concept].md  # Detailed pages
+├── overview.md           # Always at root - repo summary
+├── concepts/             # Conceptual explanations (type: concept)
+│   ├── architecture.md   # System design overview
+│   └── [concept].md      # One per major concept
+├── guides/               # How-to guides (type: guide)
+│   └── [guide].md
+└── reference/            # Reference documentation (type: reference)
+    └── [reference].md
 ```
 
 Rules:
-- No more than 15 pages at root level
-- Create subdirectory if topic has 3+ related concepts
+- `overview.md` always lives at the wiki root
+- All other pages go in a subdirectory matching their type: `concepts/`, `guides/`, or `reference/`
 - Every page must have at least one incoming link
+- If a concept area is large, create a sub-subdirectory (e.g., `concepts/auth/overview.md`)
 
 #### 3. Write Pages
 
@@ -167,19 +171,19 @@ Create `wiki/.index.json`:
       "links_to": ["architecture", "concept-1"],
       "linked_from": []
     },
-    "concept-name": {
-      "path": "wiki/concept-name.md",
+    "concepts/concept-name": {
+      "path": "wiki/concepts/concept-name.md",
       "title": "Concept Name",
       "type": "concept",
       "aliases": ["alt-name"],
       "sources": ["src/concept/"],
-      "links_to": ["other-concept"],
+      "links_to": ["concepts/other-concept"],
       "linked_from": ["overview"]
     }
   },
   "source_map": {
-    "src/concept/": ["concept-name"],
-    "src/concept/specific.ts": ["concept-name", "other-concept"]
+    "src/concept/": ["concepts/concept-name"],
+    "src/concept/specific.ts": ["concepts/concept-name", "concepts/other-concept"]
   }
 }
 ```
@@ -235,10 +239,10 @@ Same validation as init mode.
 ## Wikilink Resolution
 
 When writing `[[Page Name]]`:
-1. Check if exact title match exists
+1. Check if exact title match exists in .index.json
 2. Check aliases in .index.json
-3. If ambiguous, use path: `[[subdir/page-name]]`
-4. Slugify for filename: "Page Name" → "page-name.md"
+3. If ambiguous, use full path: `[[concepts/page-name]]`
+4. Slugify for filename: "Page Name" → `concepts/page-name.md` (using the page's type as directory)
 
 ## Writing Guidelines
 
