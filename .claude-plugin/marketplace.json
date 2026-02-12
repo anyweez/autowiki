@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "autowiki",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Auto-updating wiki for agent context",
   "owner": {
     "name": "anyweez",
@@ -11,7 +11,7 @@
     {
       "name": "autowiki",
       "description": "Maintains an auto-updating wiki for agent context",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "author": {
         "name": "anyweez"
       },

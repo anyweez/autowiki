@@ -1,6 +1,6 @@
 {
   "name": "autowiki",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Claude Code plugin for maintaining an auto-updating agent wiki",
   "scripts": {
     "generate-llms": "node scripts/generate-llms.js"

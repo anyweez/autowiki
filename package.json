@@ -1,6 +1,6 @@
 {
   "name": "autowiki",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Browse auto-generated wiki documentation in your browser",
   "bin": {
     "autowiki": "./bin/autowiki.js"
