@@ -1,6 +1,6 @@
 {
   "name": "autowiki",
-  "version": "1.0.0",
+  "version": "1.2.3",
   "description": "Browse auto-generated wiki documentation in your browser",
   "bin": {
     "autowiki": "./bin/autowiki.js"
@@ -22,5 +22,10 @@
     "markdown",
     "codebase"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anyweez/autowiki.git"
+  },
+  "homepage": "https://github.com/anyweez/autowiki",
   "license": "MIT"
 }
