@@ -104,7 +104,7 @@ Instructions:
 
 After wiki pages are written, run the llms.txt generation:
 ```bash
-python scripts/generate-llms.py
+node scripts/generate-llms.js
 ```
 
 This creates:

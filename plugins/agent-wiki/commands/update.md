@@ -112,7 +112,7 @@ Instructions:
 
 1. Run llms.txt generation script:
    ```bash
-   python scripts/generate-llms.py
+   node scripts/generate-llms.js
    ```
 
 2. Update last-update marker:
