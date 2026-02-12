@@ -4,7 +4,7 @@
   "version": "1.2.3",
   "description": "Auto-updating wiki for agent context",
   "owner": {
-    "name": "Luke Segars",
+    "name": "anyweez",
     "email": "luke@example.com"
   },
   "plugins": [
@@ -13,9 +13,9 @@
       "description": "Maintains an auto-updating wiki for agent context",
       "version": "1.2.3",
       "author": {
-        "name": "Luke Segars"
+        "name": "anyweez"
       },
-      "source": "./plugins/agent-wiki",
+      "source": "./plugins/autowiki",
       "category": "productivity"
     }
   ]

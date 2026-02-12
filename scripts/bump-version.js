@@ -18,8 +18,8 @@ const ROOT = path.resolve(__dirname, '..');
 
 const FILES = [
   'package.json',
-  'plugins/agent-wiki/package.json',
-  'plugins/agent-wiki/.claude-plugin/plugin.json',
+  'plugins/autowiki/package.json',
+  'plugins/autowiki/.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
 ];
 
