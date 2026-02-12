@@ -1,17 +1,17 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "agent-wiki-marketplace",
-  "version": "1.0.0",
-  "description": "Local marketplace for agent-wiki plugin",
+  "name": "autowiki",
+  "version": "1.2.1",
+  "description": "Auto-updating wiki for agent context",
   "owner": {
     "name": "Luke Segars",
     "email": "luke@example.com"
   },
   "plugins": [
     {
-      "name": "wiki",
+      "name": "autowiki",
       "description": "Maintains an auto-updating wiki for agent context",
-      "version": "1.1.0",
+      "version": "1.2.1",
       "author": {
         "name": "Luke Segars"
       },
