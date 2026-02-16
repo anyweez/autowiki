@@ -48,6 +48,16 @@ Then select **autowiki** from the marketplace to install it.
 
 Claude will explore your codebase and create a `wiki/` directory with structured documentation.
 
+### Add to your CLAUDE.md
+
+Add this to your project's `CLAUDE.md` so Claude keeps the wiki up to date as you work:
+
+```markdown
+## Wiki
+
+The project maintains an auto-generated wiki in `wiki/`. The index is at `wiki/llms.txt`. When making significant changes to the codebase, update the wiki by running the `/autowiki:update` skill.
+```
+
 ### Browse it
 
 ```bash
