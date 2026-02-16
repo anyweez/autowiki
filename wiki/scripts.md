@@ -1,31 +1,33 @@
 ---
 title: Scripts
 type: reference
-tags: [scripts, llms-txt, server, utilities]
+tags: [scripts, llms-txt, server, utilities, npm]
 related:
   - "[[Commands]]"
   - "[[Architecture]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/scripts/
+  - plugins/autowiki/scripts/
+  - bin/
+  - lib/
 ---
 
 # Scripts
 
-The agent-wiki plugin includes two utility scripts: a Python script for generating llms.txt files and a Node.js HTTP server for browsing the wiki locally.
+autowiki includes a Node.js script for generating llms.txt files and an npm package for browsing the wiki locally. The web server has been moved out of the plugin and into the main npm package (`npx autowiki`).
 
-## generate-llms.py
+## generate-llms.js
 
-**File**: `plugins/agent-wiki/scripts/generate-llms.py`
-**Language**: Python 3.8+
-**Dependencies**: PyYAML
+**File**: `plugins/autowiki/scripts/generate-llms.js`
+**Language**: Node.js 16+
+**Dependencies**: None (pure Node.js)
 
 Generates `llms.txt` and `llms-full.txt` from wiki pages for AI discoverability.
 
 ### Usage
 
 ```bash
-python scripts/generate-llms.py [--wiki-dir wiki/]
+node scripts/generate-llms.js [--wiki-dir wiki/]
 ```
 
 ### Output Files
@@ -61,28 +63,29 @@ FILE: wiki/overview.md
 
 ### Key Functions
 
-**`parse_frontmatter(content)`** (`generate-llms.py:21-36`)
+**`parseFrontmatter(content)`** (`generate-llms.js:27-99`)
 - Extracts YAML frontmatter and body from markdown
-- Returns tuple of (dict, str)
+- Inline implementation (no external YAML dependency)
+- Returns object with `frontmatter` and `body`
 
-**`get_first_paragraph(body)`** (`generate-llms.py:39-73`)
+**`getFirstParagraph(body)`** (`generate-llms.js:102-134`)
 - Extracts first non-heading paragraph as description
 - Truncates to 200 characters
 
-**`collect_wiki_pages(wiki_dir)`** (`generate-llms.py:76-110`)
+**`collectWikiPages(dir, base)`** (`generate-llms.js:136-167`)
 - Recursively collects all .md files
 - Skips hidden files/directories
 - Returns list of page metadata dicts
 
-**`generate_llms_txt(pages, wiki_dir, repo_name)`** (`generate-llms.py:113-174`)
+**`generateLlmsTxt(pages, wikiDirPath, repoName)`** (`generate-llms.js:195-242`)
 - Groups pages by type (overview, concept, guide, reference)
 - Generates formatted index content
 
-**`generate_llms_full_txt(pages, repo_name)`** (`generate-llms.py:177-204`)
+**`generateLlmsFullTxt(pages, repoName)`** (`generate-llms.js:244-270`)
 - Concatenates all page content
 - Sorts with overview first, then alphabetically
 
-**`get_repo_name(wiki_dir)`** (`generate-llms.py:207-231`)
+**`getRepoName(wikiDirPath)`** (`generate-llms.js:169-193`)
 - Attempts to determine repo name from package.json or pyproject.toml
 - Falls back to directory name
 
@@ -90,73 +93,70 @@ FILE: wiki/overview.md
 
 Called by commands after wiki generation/update:
 ```bash
-python scripts/generate-llms.py
+node scripts/generate-llms.js
 ```
-
-See `commands/init.md:106-108` and `commands/update.md:114-116`.
 
 ---
 
-## serve.js
+## Web Server (npx autowiki)
 
-**File**: `plugins/agent-wiki/scripts/serve.js`
-**Language**: Node.js 16+
-**Dependencies**: markdown-it, markdown-it-wikilinks
+The wiki web server is distributed as the `autowiki` npm package. It replaces the previous plugin-based `/autowiki:serve` command.
 
-HTTP server for browsing the wiki with rendered markdown and wikilink support.
+### CLI Entry Point
 
-### Usage
+**File**: `bin/autowiki.js`
 
-**Server mode** (default):
+Parses CLI arguments and starts the server or exports static HTML.
+
 ```bash
-node scripts/serve.js [--wiki-dir wiki/] [--port 3000]
+npx autowiki [options]
+
+  --port <number>     Port to listen on (default: 3000)
+  --wiki-dir <path>   Wiki directory (default: auto-detect from git root)
+  --export            Export static HTML instead of starting server
+  --output <path>     Output directory for export (default: wiki-html/)
+  --open              Auto-open browser after starting server
+  -h, --help          Show help message
 ```
 
-**Export mode** (static HTML):
-```bash
-node scripts/serve.js --export --output wiki-html/
-```
+Wiki directory auto-detection: Uses `git rev-parse --show-toplevel` to find the repo root, then looks for `wiki/` there. Falls back to `./wiki` in the current directory.
+
+### Library Modules
+
+**`lib/server.js`** - HTTP server with routing and static export
+- `startServer(wikiDir, port, open)` - Starts the HTTP server
+- `exportSite(wikiDir, outputDir)` - Generates static HTML files
+
+**`lib/renderer.js`** - Markdown rendering pipeline
+- Configures markdown-it with wikilink support
+- Handles frontmatter extraction
+
+**`lib/scanner.js`** - Wiki page scanner and frontmatter parser
+- Scans wiki directory for pages
+- Parses YAML frontmatter
+- Builds title-to-path mappings for wikilink resolution
+
+**`lib/highlight.js`** - Syntax highlighting for code blocks
+- Language-aware code highlighting
+
+**`lib/template.js`** - HTML template and styling
+- Sidebar navigation with pages grouped by type
+- Client-side search (Ctrl+K / Cmd+K)
+- Dark mode support (CSS media query)
+- Responsive layout
 
 ### Server Features
 
-1. **Markdown rendering** - Uses markdown-it with HTML, linkify, and typographer enabled (`serve.js:18-23`)
-2. **Wikilink support** - Resolves `[[Page Name]]` syntax to proper links (`serve.js:27-39`)
-3. **Dark mode** - CSS media query for `prefers-color-scheme: dark` (`serve.js:162-170`)
-4. **Page index** - Auto-generated list at `/index` (`serve.js:242-290`)
-5. **Static file serving** - Serves llms.txt, .index.json directly (`serve.js:355-366`)
-
-### Key Functions
-
-**`parseFrontmatter(content)`** (`serve.js:89-118`)
-- Simple YAML parsing for page frontmatter
-- Handles title, tags, type fields
-
-**`resolveWikilinks(content)`** (`serve.js:121-127`)
-- Converts `[[Target]]` or `[[Target|display]]` to HTML links
-- Uses titleToPath map built from .index.json
-
-**`renderPage(pagePath)`** (`serve.js:130-239`)
-- Loads markdown file, parses frontmatter
-- Resolves wikilinks, renders to HTML
-- Returns complete HTML document with styling
-
-**`renderIndex()`** (`serve.js:242-290`)
-- Scans wiki directory recursively
-- Generates HTML page listing all wiki pages
+1. **Sidebar navigation** - Pages grouped by type (overview, concepts, guides, reference)
+2. **Full-text search** - Client-side search triggered by Ctrl+K / Cmd+K
+3. **Wikilink support** - Resolves `[[Page Name]]` syntax to proper links
+4. **Dark mode** - CSS media query for `prefers-color-scheme: dark`
+5. **Syntax highlighting** - Language-aware code block highlighting
+6. **Static export** - Generate standalone HTML files with `--export`
 
 ### Wikilink Resolution
 
-From `serve.js:79-86`:
-```javascript
-const titleToPath = {};
-for (const [slug, page] of Object.entries(wikiIndex.pages || {})) {
-    titleToPath[page.title.toLowerCase()] = slug;
-    titleToPath[slug] = slug;
-    for (const alias of (page.aliases || [])) {
-        titleToPath[alias.toLowerCase()] = slug;
-    }
-}
-```
+The scanner builds a title-to-path map from `.index.json`:
 
 Resolution order:
 1. Exact title match (case-insensitive)
@@ -166,7 +166,7 @@ Resolution order:
 
 ### Export Mode
 
-When `--export` flag is set (`serve.js:293-338`):
+When `--export` flag is set:
 1. Creates output directory
 2. Recursively processes wiki directory
 3. Renders each .md file to .html
@@ -184,18 +184,11 @@ When `--export` flag is set (`serve.js:293-338`):
 | `/llms.txt` | Raw llms.txt content |
 | `/.index.json` | Raw index JSON |
 
-### Styling
-
-Inline CSS with CSS custom properties for theming (`serve.js:154-224`):
-- Light mode: white background, dark text
-- Dark mode: dark background, light text
-- Wikilinks styled with dashed underline
-
 ---
 
 ## Dependencies
 
-**package.json** (`plugins/agent-wiki/package.json`):
+**Root package.json** (npm package):
 ```json
 {
   "dependencies": {
@@ -205,12 +198,24 @@ Inline CSS with CSS custom properties for theming (`serve.js:154-224`):
 }
 ```
 
-**Python requirements**:
-- Python 3.8+
-- PyYAML (`pip install pyyaml`)
+**Plugin package.json** (`plugins/autowiki/package.json`):
+```json
+{
+  "dependencies": {
+    "markdown-it": "^14.0.0",
+    "markdown-it-wikilinks": "^1.2.0"
+  }
+}
+```
+
+No Python dependencies are required.
 
 ## Code References
 
-- `plugins/agent-wiki/scripts/generate-llms.py` - llms.txt generator (275 lines)
-- `plugins/agent-wiki/scripts/serve.js` - Wiki server (397 lines)
-- `plugins/agent-wiki/package.json` - Node.js dependencies
+- `plugins/autowiki/scripts/generate-llms.js` - llms.txt generator (304 lines)
+- `bin/autowiki.js` - CLI entry point (89 lines)
+- `lib/server.js` - HTTP server
+- `lib/renderer.js` - Markdown rendering
+- `lib/scanner.js` - Page scanning and frontmatter
+- `lib/highlight.js` - Code highlighting
+- `lib/template.js` - HTML template and styles

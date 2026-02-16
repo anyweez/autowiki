@@ -7,16 +7,16 @@ related:
   - "[[Agents]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/commands/
+  - plugins/autowiki/commands/
 ---
 
 # Commands
 
-The agent-wiki plugin provides four user-invokable commands, each defined as a markdown file in `plugins/agent-wiki/commands/`. Commands are namespaced with the `agent-wiki:` prefix when installed as a plugin.
+The autowiki plugin provides three user-invokable commands, each defined as a markdown file in `plugins/autowiki/commands/`. Commands are namespaced with the `autowiki:` prefix when installed as a plugin. A fourth command (`serve`) exists but is deprecated in favor of `npx autowiki`.
 
-## /agent-wiki:init
+## /autowiki:init
 
-**File**: `plugins/agent-wiki/commands/init.md`
+**File**: `plugins/autowiki/commands/init.md`
 
 Initializes a new wiki by exploring the codebase with parallel sub-agents.
 
@@ -28,7 +28,7 @@ Initializes a new wiki by exploring the codebase with parallel sub-agents.
 4. **Partition work** - Divides codebase into logical partitions for parallel exploration (`init.md:49-61`)
 5. **Launch explorers** - Spawns wiki-explorer agents (up to 4 concurrent) (`init.md:63-84`)
 6. **Coordinate** - Launches wiki-coordinator to synthesize findings (`init.md:86-101`)
-7. **Generate index** - Runs `generate-llms.py` to create llms.txt files (`init.md:103-113`)
+7. **Generate index** - Runs `generate-llms.js` to create llms.txt files (`init.md:103-113`)
 
 ### Output
 
@@ -47,20 +47,20 @@ wiki/
 ### Usage
 
 ```
-/agent-wiki:init
+/autowiki:init
 ```
 
 ### Error Handling
 
-- If wiki exists: Stops with message to use `/agent-wiki:update` or delete wiki/
+- If wiki exists: Stops with message to use `/autowiki:update` or delete wiki/
 - If exploration fails: Logs error, continues with other partitions
 - If coordination fails: Saves raw outputs to `wiki/.raw/`
 
 ---
 
-## /agent-wiki:update
+## /autowiki:update
 
-**File**: `plugins/agent-wiki/commands/update.md`
+**File**: `plugins/autowiki/commands/update.md`
 
 Updates the wiki to reflect recent changes in the codebase.
 
@@ -98,7 +98,7 @@ See `update.md:131-137`.
 ### Usage
 
 ```
-/agent-wiki:update
+/autowiki:update
 ```
 
 Or configure auto-update in `wiki/.config.yml`:
@@ -108,9 +108,9 @@ auto_update: true
 
 ---
 
-## /agent-wiki:reorganize
+## /autowiki:reorganize
 
-**File**: `plugins/agent-wiki/commands/reorganize.md`
+**File**: `plugins/autowiki/commands/reorganize.md`
 
 Analyzes wiki structure and suggests/applies improvements.
 
@@ -145,46 +145,18 @@ Analyzes wiki structure and suggests/applies improvements.
 ### Usage
 
 ```
-/agent-wiki:reorganize
+/autowiki:reorganize
 ```
 
 ---
 
-## /agent-wiki:serve
+## /autowiki:serve (Deprecated)
 
-**File**: `plugins/agent-wiki/commands/serve.md`
+**File**: `plugins/autowiki/commands/serve.md`
 
-Starts a local web server to browse the wiki in a browser.
+This command is deprecated. Use `npx autowiki` instead, which provides a better browsing experience with sidebar navigation, full-text search, dark mode, and syntax highlighting.
 
-### Process
-
-1. **Check dependencies** - Verifies Node.js and npm packages (`serve.md:17-32`)
-2. **Start server** - Runs `scripts/serve.js` (`serve.md:34-38`)
-3. **Report** - Outputs URL and available features (`serve.md:40-55`)
-
-### Server Features
-
-- Markdown rendering with `markdown-it`
-- Wikilink resolution via `markdown-it-wikilinks`
-- Code syntax highlighting
-- Search across all pages
-- Dark mode support (CSS media query)
-
-### Static Export Mode
-
-For generating static HTML:
-
-```bash
-node scripts/serve.js --export --output ./wiki-html
-```
-
-### Usage
-
-```
-/agent-wiki:serve
-```
-
-Then open http://localhost:3000 in browser.
+See [[Scripts]] for details on the npm-based web server.
 
 ---
 
@@ -216,7 +188,7 @@ Brief explanation.
 
 ## Code References
 
-- `plugins/agent-wiki/commands/init.md` - Init command definition
-- `plugins/agent-wiki/commands/update.md` - Update command definition
-- `plugins/agent-wiki/commands/reorganize.md` - Reorganize command definition
-- `plugins/agent-wiki/commands/serve.md` - Serve command definition
+- `plugins/autowiki/commands/init.md` - Init command definition
+- `plugins/autowiki/commands/update.md` - Update command definition
+- `plugins/autowiki/commands/reorganize.md` - Reorganize command definition
+- `plugins/autowiki/commands/serve.md` - Serve command (deprecated)

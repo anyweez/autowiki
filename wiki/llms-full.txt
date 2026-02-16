@@ -7,22 +7,22 @@ This file contains the complete content of all wiki pages for AI context.
 FILE: wiki/overview.md
 ----------------------------------------
 ---
-title: Agent Wiki
+title: autowiki
 type: overview
-tags: [claude-code, plugin, documentation, wiki]
+tags: [claude-code, plugin, documentation, wiki, npm]
 sources:
   - ./
-  - plugins/agent-wiki/
+  - plugins/autowiki/
 ---
 
-# Agent Wiki
+# autowiki
 
-A Claude Code plugin that maintains an auto-updating wiki for agent context about how repository components work. The plugin enables AI agents to explore codebases, synthesize findings, and generate structured documentation that stays current with code changes.
+Auto-generated wiki documentation for your codebase, built by AI agents and browsable by humans. The project has two parts: a **Claude Code plugin** that builds and maintains a wiki, and an **npm package** (`npx autowiki`) that serves it as a searchable website.
 
 ## Architecture
 
 ```
-User Command (/agent-wiki:init, /agent-wiki:update, etc.)
+User Command (/autowiki:init, /autowiki:update, etc.)
          |
          v
 +------------------+     +-------------------+
@@ -40,76 +40,111 @@ User Command (/agent-wiki:init, /agent-wiki:update, etc.)
          |
          v
 +------------------+     +-------------------+
-| Generated Wiki   | --> | Supporting Tools  |
-| (wiki/*.md)      |     | - serve.js        |
-+------------------+     | - generate-llms.py|
+| Generated Wiki   | --> | npx autowiki      |
+| (wiki/*.md)      |     | (bin/autowiki.js) |
++------------------+     | (lib/server.js)   |
                          +-------------------+
 ```
 
 ## Core Concepts
 
-- [[Commands]] - Four user-invokable commands (init, update, reorganize, serve)
+- [[Commands]] - Three user-invokable commands (init, update, reorganize)
 - [[Agents]] - Wiki Explorer and Wiki Coordinator sub-agents
-- [[Scripts]] - Python and Node.js utilities for llms.txt generation and wiki serving
+- [[Scripts]] - Node.js utilities for llms.txt generation and wiki serving
 - [[Configuration]] - YAML config, data structures, and auto-update hooks
 
 ## Getting Started
 
-For agents working with this codebase:
+### Install the Claude Code plugin
 
-1. Start with [[Architecture]] for system design
-2. See [[Commands]] for the main entry points
-3. Check [[Agents]] for the exploration and coordination system
-4. Review [[Configuration]] for customization options
+In Claude Code, run:
+
+```
+/plugins
+```
+
+Select **Add a marketplace**, then enter:
+
+```
+anyweez/autowiki
+```
+
+Then select **autowiki** from the marketplace to install it.
+
+### Generate your wiki
+
+```
+/autowiki:init
+```
+
+Claude will explore your codebase and create a `wiki/` directory with structured documentation.
+
+### Browse it
+
+```bash
+npx autowiki
+```
+
+Open http://localhost:3000 and you're in.
+
+## Plugin Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/autowiki:init` | Bootstrap wiki from codebase |
+| `/autowiki:update` | Update wiki after code changes |
+| `/autowiki:reorganize` | Restructure wiki if needed |
+
+## Web Server Options
+
+```
+npx autowiki [options]
+
+  --port <number>     Port to listen on (default: 3000)
+  --wiki-dir <path>   Wiki directory (default: auto-detect)
+  --export            Export static HTML files
+  --output <path>     Export directory (default: wiki-html/)
+  --open              Open browser automatically
+```
 
 ## Directory Structure
 
 ```
-plugins/agent-wiki/
+bin/
+  autowiki.js              - CLI entry point for npx autowiki
+lib/
+  highlight.js             - Syntax highlighting for code blocks
+  renderer.js              - Markdown rendering pipeline
+  scanner.js               - Wiki page scanner and frontmatter parser
+  server.js                - HTTP server with wikilink support
+  template.js              - HTML template and styling
+package.json               - npm package config (autowiki)
+
+plugins/autowiki/
   .claude-plugin/
-    plugin.json          - Plugin manifest
+    plugin.json            - Plugin manifest
   agents/
-    wiki-explorer.md     - [[Agents|Explorer agent]] instructions
-    wiki-coordinator.md  - [[Agents|Coordinator agent]] instructions
+    wiki-explorer.md       - [[Agents|Explorer agent]] instructions
+    wiki-coordinator.md    - [[Agents|Coordinator agent]] instructions
   commands/
-    init.md              - [[Commands|/agent-wiki:init]] command
-    update.md            - [[Commands|/agent-wiki:update]] command
-    reorganize.md        - [[Commands|/agent-wiki:reorganize]] command
-    serve.md             - [[Commands|/agent-wiki:serve]] command
+    init.md                - [[Commands|/autowiki:init]] command
+    update.md              - [[Commands|/autowiki:update]] command
+    reorganize.md          - [[Commands|/autowiki:reorganize]] command
+    serve.md               - Deprecated, redirects to npx autowiki
   hooks/
-    post-task.sh         - [[Configuration|Auto-update hook]]
+    post-task.sh           - [[Configuration|Auto-update hook]]
   scripts/
-    generate-llms.py     - [[Scripts|llms.txt generator]]
-    serve.js             - [[Scripts|Wiki web server]]
-  package.json           - Node.js dependencies
+    generate-llms.js       - [[Scripts|llms.txt generator]]
+  package.json             - Plugin Node.js dependencies
 
 .claude-plugin/
-  marketplace.json       - Plugin distribution config
+  marketplace.json         - Plugin distribution config
 ```
 
-## Installation
+## Requirements
 
-Install via Claude Code:
-
-```bash
-/plugin marketplace add github:anyweez/agent-wiki
-/plugin install agent-wiki@anyweez/agent-wiki
-```
-
-Or for local development:
-
-```bash
-claude --plugin-dir /path/to/agent-wiki
-```
-
-## Quick Reference
-
-| Command | Purpose |
-|---------|---------|
-| `/agent-wiki:init` | Bootstrap wiki from codebase |
-| `/agent-wiki:update` | Update wiki after code changes |
-| `/agent-wiki:reorganize` | Restructure wiki if needed |
-| `/agent-wiki:serve` | Browse wiki locally |
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (for the plugin)
+- Node.js 16+ (for the web server)
 
 
 ================================================================================
@@ -124,16 +159,16 @@ related:
   - "[[Commands]]"
   - "[[Architecture]]"
 sources:
-  - plugins/agent-wiki/agents/
+  - plugins/autowiki/agents/
 ---
 
 # Agents
 
-The agent-wiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation. These agents are defined as markdown instruction files that Claude Code launches as Task sub-agents.
+The autowiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation. These agents are defined as markdown instruction files that Claude Code launches as Task sub-agents.
 
 ## Wiki Explorer Agent
 
-**File**: `plugins/agent-wiki/agents/wiki-explorer.md`
+**File**: `plugins/autowiki/agents/wiki-explorer.md`
 
 The explorer agent analyzes assigned code partitions and produces structured findings for the coordinator.
 
@@ -221,7 +256,7 @@ See `wiki-explorer.md:126-138`.
 
 ## Wiki Coordinator Agent
 
-**File**: `plugins/agent-wiki/agents/wiki-coordinator.md`
+**File**: `plugins/autowiki/agents/wiki-coordinator.md`
 
 The coordinator synthesizes explorer findings into cohesive wiki documentation.
 
@@ -316,8 +351,8 @@ Command
 
 ## Code References
 
-- `plugins/agent-wiki/agents/wiki-explorer.md` - Explorer instructions (156 lines)
-- `plugins/agent-wiki/agents/wiki-coordinator.md` - Coordinator instructions (269 lines)
+- `plugins/autowiki/agents/wiki-explorer.md` - Explorer instructions
+- `plugins/autowiki/agents/wiki-coordinator.md` - Coordinator instructions
 
 
 ================================================================================
@@ -333,19 +368,21 @@ related:
   - "[[Agents]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/
+  - plugins/autowiki/
+  - bin/
+  - lib/
 ---
 
 # Architecture
 
-The agent-wiki plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content, supported by utility scripts for serving and indexing.
+autowiki has two main components: a **Claude Code plugin** (`plugins/autowiki/`) that generates and maintains wiki content, and an **npm package** (`bin/` + `lib/`) that serves the wiki as a website. The plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content, supported by utility scripts for indexing.
 
 ## System Flow
 
-### Initialization Flow (/agent-wiki:init)
+### Initialization Flow (/autowiki:init)
 
 ```
-1. User runs /agent-wiki:init
+1. User runs /autowiki:init
 2. Command handler (commands/init.md) executes
 3. Pre-flight: Check wiki/ doesn't exist
 4. Create default wiki/.config.yml
@@ -355,14 +392,14 @@ The agent-wiki plugin follows a command-agent-script architecture where user com
 8. Collect explorer outputs
 9. Launch wiki-coordinator agent
 10. Coordinator writes wiki pages
-11. Run generate-llms.py
+11. Run generate-llms.js
 12. Report completion
 ```
 
-### Update Flow (/agent-wiki:update)
+### Update Flow (/autowiki:update)
 
 ```
-1. User runs /agent-wiki:update (or auto-triggered)
+1. User runs /autowiki:update (or auto-triggered)
 2. Command handler (commands/update.md) executes
 3. Pre-flight: Check wiki/ exists
 4. Detect changes via git diff since wiki/.last-update
@@ -383,10 +420,10 @@ Commands are markdown files with embedded instructions that Claude Code executes
 
 | File | Command | Role |
 |------|---------|------|
-| `commands/init.md` | `/agent-wiki:init` | Orchestrates full wiki creation |
-| `commands/update.md` | `/agent-wiki:update` | Orchestrates incremental updates |
-| `commands/reorganize.md` | `/agent-wiki:reorganize` | Analyzes and restructures wiki |
-| `commands/serve.md` | `/agent-wiki:serve` | Starts local web server |
+| `commands/init.md` | `/autowiki:init` | Orchestrates full wiki creation |
+| `commands/update.md` | `/autowiki:update` | Orchestrates incremental updates |
+| `commands/reorganize.md` | `/autowiki:reorganize` | Analyzes and restructures wiki |
+| `commands/serve.md` | `/autowiki:serve` | Deprecated, redirects to `npx autowiki` |
 
 ### Agents Layer
 
@@ -397,14 +434,26 @@ Agents are specialized sub-agents launched by commands to perform focused tasks.
 | Wiki Explorer | Explore code partition | Directory list, context | Concept list, code refs |
 | Wiki Coordinator | Synthesize findings | Explorer outputs | Wiki pages, index |
 
+### npm Package (Web Server)
+
+The web server is distributed as an npm package for browsing wikis locally.
+
+| File | Purpose |
+|------|---------|
+| `bin/autowiki.js` | CLI entry point, argument parsing, wiki directory auto-detection |
+| `lib/server.js` | HTTP server with routing, wikilink resolution, static export |
+| `lib/renderer.js` | Markdown rendering pipeline |
+| `lib/scanner.js` | Wiki page scanner and frontmatter parser |
+| `lib/highlight.js` | Syntax highlighting for code blocks |
+| `lib/template.js` | HTML template with sidebar, search, dark mode styling |
+
 ### Scripts Layer
 
 Utility scripts that support wiki functionality.
 
 | Script | Language | Purpose |
 |--------|----------|---------|
-| `generate-llms.py` | Python | Generate llms.txt index files |
-| `serve.js` | Node.js | HTTP server with wikilink support |
+| `generate-llms.js` | Node.js | Generate llms.txt index files |
 
 ### Data Layer
 
@@ -420,6 +469,13 @@ Generated files that comprise the wiki.
 | `wiki/*.md` | Documentation pages |
 
 ## Key Design Decisions
+
+### Two-Part Distribution
+
+The project is split into a Claude Code plugin (for wiki generation) and an npm package (for wiki viewing). This allows:
+- Wiki generation to happen within Claude Code's agent framework
+- Wiki browsing to work independently via `npx autowiki` with zero configuration
+- The generated markdown to be useful on its own (for AI agents via `llms.txt`)
 
 ### Parallel Exploration
 
@@ -446,7 +502,7 @@ Pages connect via `[[wikilinks]]` resolved at render time:
 2. Check aliases in `.index.json`
 3. Fall back to slugified filename
 
-See `scripts/serve.js:121-127` for resolution logic.
+See `lib/scanner.js` for resolution logic.
 
 ## Extension Points
 
@@ -490,16 +546,16 @@ related:
   - "[[Agents]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/commands/
+  - plugins/autowiki/commands/
 ---
 
 # Commands
 
-The agent-wiki plugin provides four user-invokable commands, each defined as a markdown file in `plugins/agent-wiki/commands/`. Commands are namespaced with the `agent-wiki:` prefix when installed as a plugin.
+The autowiki plugin provides three user-invokable commands, each defined as a markdown file in `plugins/autowiki/commands/`. Commands are namespaced with the `autowiki:` prefix when installed as a plugin. A fourth command (`serve`) exists but is deprecated in favor of `npx autowiki`.
 
-## /agent-wiki:init
+## /autowiki:init
 
-**File**: `plugins/agent-wiki/commands/init.md`
+**File**: `plugins/autowiki/commands/init.md`
 
 Initializes a new wiki by exploring the codebase with parallel sub-agents.
 
@@ -511,7 +567,7 @@ Initializes a new wiki by exploring the codebase with parallel sub-agents.
 4. **Partition work** - Divides codebase into logical partitions for parallel exploration (`init.md:49-61`)
 5. **Launch explorers** - Spawns wiki-explorer agents (up to 4 concurrent) (`init.md:63-84`)
 6. **Coordinate** - Launches wiki-coordinator to synthesize findings (`init.md:86-101`)
-7. **Generate index** - Runs `generate-llms.py` to create llms.txt files (`init.md:103-113`)
+7. **Generate index** - Runs `generate-llms.js` to create llms.txt files (`init.md:103-113`)
 
 ### Output
 
@@ -530,20 +586,20 @@ wiki/
 ### Usage
 
 ```
-/agent-wiki:init
+/autowiki:init
 ```
 
 ### Error Handling
 
-- If wiki exists: Stops with message to use `/agent-wiki:update` or delete wiki/
+- If wiki exists: Stops with message to use `/autowiki:update` or delete wiki/
 - If exploration fails: Logs error, continues with other partitions
 - If coordination fails: Saves raw outputs to `wiki/.raw/`
 
 ---
 
-## /agent-wiki:update
+## /autowiki:update
 
-**File**: `plugins/agent-wiki/commands/update.md`
+**File**: `plugins/autowiki/commands/update.md`
 
 Updates the wiki to reflect recent changes in the codebase.
 
@@ -581,7 +637,7 @@ See `update.md:131-137`.
 ### Usage
 
 ```
-/agent-wiki:update
+/autowiki:update
 ```
 
 Or configure auto-update in `wiki/.config.yml`:
@@ -591,9 +647,9 @@ auto_update: true
 
 ---
 
-## /agent-wiki:reorganize
+## /autowiki:reorganize
 
-**File**: `plugins/agent-wiki/commands/reorganize.md`
+**File**: `plugins/autowiki/commands/reorganize.md`
 
 Analyzes wiki structure and suggests/applies improvements.
 
@@ -628,46 +684,18 @@ Analyzes wiki structure and suggests/applies improvements.
 ### Usage
 
 ```
-/agent-wiki:reorganize
+/autowiki:reorganize
 ```
 
 ---
 
-## /agent-wiki:serve
+## /autowiki:serve (Deprecated)
 
-**File**: `plugins/agent-wiki/commands/serve.md`
+**File**: `plugins/autowiki/commands/serve.md`
 
-Starts a local web server to browse the wiki in a browser.
+This command is deprecated. Use `npx autowiki` instead, which provides a better browsing experience with sidebar navigation, full-text search, dark mode, and syntax highlighting.
 
-### Process
-
-1. **Check dependencies** - Verifies Node.js and npm packages (`serve.md:17-32`)
-2. **Start server** - Runs `scripts/serve.js` (`serve.md:34-38`)
-3. **Report** - Outputs URL and available features (`serve.md:40-55`)
-
-### Server Features
-
-- Markdown rendering with `markdown-it`
-- Wikilink resolution via `markdown-it-wikilinks`
-- Code syntax highlighting
-- Search across all pages
-- Dark mode support (CSS media query)
-
-### Static Export Mode
-
-For generating static HTML:
-
-```bash
-node scripts/serve.js --export --output ./wiki-html
-```
-
-### Usage
-
-```
-/agent-wiki:serve
-```
-
-Then open http://localhost:3000 in browser.
+See [[Scripts]] for details on the npm-based web server.
 
 ---
 
@@ -699,10 +727,10 @@ Brief explanation.
 
 ## Code References
 
-- `plugins/agent-wiki/commands/init.md` - Init command definition
-- `plugins/agent-wiki/commands/update.md` - Update command definition
-- `plugins/agent-wiki/commands/reorganize.md` - Reorganize command definition
-- `plugins/agent-wiki/commands/serve.md` - Serve command definition
+- `plugins/autowiki/commands/init.md` - Init command definition
+- `plugins/autowiki/commands/update.md` - Update command definition
+- `plugins/autowiki/commands/reorganize.md` - Reorganize command definition
+- `plugins/autowiki/commands/serve.md` - Serve command (deprecated)
 
 
 ================================================================================
@@ -718,19 +746,19 @@ related:
   - "[[Architecture]]"
 sources:
   - wiki/.config.yml
-  - plugins/agent-wiki/hooks/
-  - plugins/agent-wiki/.claude-plugin/
+  - plugins/autowiki/hooks/
+  - plugins/autowiki/.claude-plugin/
   - .claude-plugin/
 ---
 
 # Configuration
 
-The agent-wiki plugin uses several configuration files and data structures to control behavior, enable auto-updates, and support plugin distribution.
+The autowiki plugin uses several configuration files and data structures to control behavior, enable auto-updates, and support plugin distribution.
 
 ## Wiki Configuration
 
 **File**: `wiki/.config.yml`
-**Created by**: `/agent-wiki:init`
+**Created by**: `/autowiki:init`
 
 Controls wiki generation and update behavior.
 
@@ -804,7 +832,7 @@ JSON index mapping pages to sources for fast lookups and change detection.
 ```json
 {
   "version": 1,
-  "generated": "2024-01-19T12:00:00Z",
+  "generated": "2026-01-19T00:00:00Z",
   "pages": {
     "overview": {
       "path": "wiki/overview.md",
@@ -853,65 +881,44 @@ JSON index mapping pages to sources for fast lookups and change detection.
 
 The index is used by:
 - **Update command** - Maps changed files to affected pages (`commands/update.md:34-50`)
-- **serve.js** - Resolves wikilinks (`scripts/serve.js:68-86`)
+- **Web server** - Resolves wikilinks (`lib/scanner.js`)
 - **Reorganize command** - Analyzes structure (`commands/reorganize.md:12-13`)
 
 ---
 
 ## Post-Task Hook
 
-**File**: `plugins/agent-wiki/hooks/post-task.sh`
+**File**: `plugins/autowiki/hooks/post-task.sh`
 **Triggered by**: Claude Code after SubagentStop events
+**Configured in**: `plugins/autowiki/hooks/hooks.json`
 
 Detects if wiki updates are recommended after agent tasks complete.
+
+### Hook Registration
+
+From `hooks/hooks.json`:
+```json
+{
+  "description": "Wiki auto-update hooks",
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-task.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### Behavior
 
 From `hooks/post-task.sh`:
-
-```bash
-#!/bin/bash
-set -e
-
-WIKI_DIR="wiki"
-CONFIG_FILE="$WIKI_DIR/.config.yml"
-
-# Check if wiki exists
-if [ ! -d "$WIKI_DIR" ]; then
-    exit 0  # No wiki, nothing to do
-fi
-
-# Check if auto-update is enabled
-if [ -f "$CONFIG_FILE" ]; then
-    AUTO_UPDATE=$(grep -E "^auto_update:" "$CONFIG_FILE" | awk '{print $2}')
-    if [ "$AUTO_UPDATE" = "false" ]; then
-        exit 0  # Auto-update disabled
-    fi
-fi
-
-# Check if there are relevant changes
-LAST_UPDATE_FILE="$WIKI_DIR/.last-update"
-if [ -f "$LAST_UPDATE_FILE" ]; then
-    LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
-    CHANGED_FILES=$(git diff --name-only "$LAST_UPDATE" HEAD 2>/dev/null || echo "")
-else
-    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-fi
-
-# Filter out wiki and non-code files
-RELEVANT_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^wiki/" | grep -v "\.md$" | grep -v "\.txt$" || true)
-
-if [ -z "$RELEVANT_CHANGES" ]; then
-    exit 0  # No relevant code changes
-fi
-
-# Signal to Claude Code
-echo "WIKI_UPDATE_RECOMMENDED"
-echo "Changed files since last wiki update:"
-echo "$RELEVANT_CHANGES"
-```
-
-### Logic Flow
 
 1. Check wiki/ directory exists
 2. Check `auto_update: true` in config
@@ -923,17 +930,17 @@ echo "$RELEVANT_CHANGES"
 
 ## Plugin Manifest
 
-**File**: `plugins/agent-wiki/.claude-plugin/plugin.json`
+**File**: `plugins/autowiki/.claude-plugin/plugin.json`
 
 Registers the plugin with Claude Code.
 
 ```json
 {
-  "name": "agent-wiki",
+  "name": "autowiki",
   "description": "Maintains an auto-updating wiki for agent context about how repository components work",
-  "version": "1.0.2",
+  "version": "1.2.4",
   "author": {
-    "name": "Luke Segars"
+    "name": "anyweez"
   }
 }
 ```
@@ -949,46 +956,42 @@ Enables plugin distribution via Claude Code marketplace system.
 ```json
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "agent-wiki-marketplace",
-  "version": "1.0.0",
-  "description": "Local marketplace for agent-wiki plugin",
+  "name": "autowiki",
+  "version": "1.2.4",
+  "description": "Auto-updating wiki for agent context",
   "owner": {
-    "name": "Luke Segars",
-    "email": "luke@example.com"
+    "name": "anyweez"
   },
   "plugins": [
     {
-      "name": "agent-wiki",
+      "name": "autowiki",
       "description": "Maintains an auto-updating wiki for agent context",
-      "version": "1.0.2",
+      "version": "1.2.4",
       "author": {
-        "name": "Luke Segars"
+        "name": "anyweez"
       },
-      "source": "./plugins/agent-wiki",
+      "source": "./plugins/autowiki",
       "category": "productivity"
     }
   ]
 }
 ```
 
-### Installation Methods
+### Installation
 
-**From GitHub marketplace**:
-```bash
-/plugin marketplace add github:anyweez/agent-wiki
-/plugin install agent-wiki@anyweez/agent-wiki
+In Claude Code, run:
+
+```
+/plugins
 ```
 
-**From local directory**:
-```bash
-/plugin marketplace add /path/to/agent-wiki
-/plugin install agent-wiki@agent-wiki-marketplace
+Select **Add a marketplace**, then enter:
+
+```
+anyweez/autowiki
 ```
 
-**Direct plugin load**:
-```bash
-claude --plugin-dir /path/to/agent-wiki
-```
+Then select **autowiki** from the marketplace to install it.
 
 ---
 
@@ -1014,9 +1017,10 @@ git rev-parse HEAD > wiki/.last-update
 
 ## Code References
 
-- `wiki/.config.yml` - Wiki configuration (35 lines)
-- `plugins/agent-wiki/hooks/post-task.sh` - Post-task hook (45 lines)
-- `plugins/agent-wiki/.claude-plugin/plugin.json` - Plugin manifest
+- `wiki/.config.yml` - Wiki configuration
+- `plugins/autowiki/hooks/hooks.json` - Hook registration
+- `plugins/autowiki/hooks/post-task.sh` - Post-task hook
+- `plugins/autowiki/.claude-plugin/plugin.json` - Plugin manifest
 - `.claude-plugin/marketplace.json` - Marketplace config
 
 
@@ -1027,31 +1031,33 @@ FILE: wiki/scripts.md
 ---
 title: Scripts
 type: reference
-tags: [scripts, llms-txt, server, utilities]
+tags: [scripts, llms-txt, server, utilities, npm]
 related:
   - "[[Commands]]"
   - "[[Architecture]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/scripts/
+  - plugins/autowiki/scripts/
+  - bin/
+  - lib/
 ---
 
 # Scripts
 
-The agent-wiki plugin includes two utility scripts: a Python script for generating llms.txt files and a Node.js HTTP server for browsing the wiki locally.
+autowiki includes a Node.js script for generating llms.txt files and an npm package for browsing the wiki locally. The web server has been moved out of the plugin and into the main npm package (`npx autowiki`).
 
-## generate-llms.py
+## generate-llms.js
 
-**File**: `plugins/agent-wiki/scripts/generate-llms.py`
-**Language**: Python 3.8+
-**Dependencies**: PyYAML
+**File**: `plugins/autowiki/scripts/generate-llms.js`
+**Language**: Node.js 16+
+**Dependencies**: None (pure Node.js)
 
 Generates `llms.txt` and `llms-full.txt` from wiki pages for AI discoverability.
 
 ### Usage
 
 ```bash
-python scripts/generate-llms.py [--wiki-dir wiki/]
+node scripts/generate-llms.js [--wiki-dir wiki/]
 ```
 
 ### Output Files
@@ -1087,28 +1093,29 @@ FILE: wiki/overview.md
 
 ### Key Functions
 
-**`parse_frontmatter(content)`** (`generate-llms.py:21-36`)
+**`parseFrontmatter(content)`** (`generate-llms.js:27-99`)
 - Extracts YAML frontmatter and body from markdown
-- Returns tuple of (dict, str)
+- Inline implementation (no external YAML dependency)
+- Returns object with `frontmatter` and `body`
 
-**`get_first_paragraph(body)`** (`generate-llms.py:39-73`)
+**`getFirstParagraph(body)`** (`generate-llms.js:102-134`)
 - Extracts first non-heading paragraph as description
 - Truncates to 200 characters
 
-**`collect_wiki_pages(wiki_dir)`** (`generate-llms.py:76-110`)
+**`collectWikiPages(dir, base)`** (`generate-llms.js:136-167`)
 - Recursively collects all .md files
 - Skips hidden files/directories
 - Returns list of page metadata dicts
 
-**`generate_llms_txt(pages, wiki_dir, repo_name)`** (`generate-llms.py:113-174`)
+**`generateLlmsTxt(pages, wikiDirPath, repoName)`** (`generate-llms.js:195-242`)
 - Groups pages by type (overview, concept, guide, reference)
 - Generates formatted index content
 
-**`generate_llms_full_txt(pages, repo_name)`** (`generate-llms.py:177-204`)
+**`generateLlmsFullTxt(pages, repoName)`** (`generate-llms.js:244-270`)
 - Concatenates all page content
 - Sorts with overview first, then alphabetically
 
-**`get_repo_name(wiki_dir)`** (`generate-llms.py:207-231`)
+**`getRepoName(wikiDirPath)`** (`generate-llms.js:169-193`)
 - Attempts to determine repo name from package.json or pyproject.toml
 - Falls back to directory name
 
@@ -1116,73 +1123,70 @@ FILE: wiki/overview.md
 
 Called by commands after wiki generation/update:
 ```bash
-python scripts/generate-llms.py
+node scripts/generate-llms.js
 ```
-
-See `commands/init.md:106-108` and `commands/update.md:114-116`.
 
 ---
 
-## serve.js
+## Web Server (npx autowiki)
 
-**File**: `plugins/agent-wiki/scripts/serve.js`
-**Language**: Node.js 16+
-**Dependencies**: markdown-it, markdown-it-wikilinks
+The wiki web server is distributed as the `autowiki` npm package. It replaces the previous plugin-based `/autowiki:serve` command.
 
-HTTP server for browsing the wiki with rendered markdown and wikilink support.
+### CLI Entry Point
 
-### Usage
+**File**: `bin/autowiki.js`
 
-**Server mode** (default):
+Parses CLI arguments and starts the server or exports static HTML.
+
 ```bash
-node scripts/serve.js [--wiki-dir wiki/] [--port 3000]
+npx autowiki [options]
+
+  --port <number>     Port to listen on (default: 3000)
+  --wiki-dir <path>   Wiki directory (default: auto-detect from git root)
+  --export            Export static HTML instead of starting server
+  --output <path>     Output directory for export (default: wiki-html/)
+  --open              Auto-open browser after starting server
+  -h, --help          Show help message
 ```
 
-**Export mode** (static HTML):
-```bash
-node scripts/serve.js --export --output wiki-html/
-```
+Wiki directory auto-detection: Uses `git rev-parse --show-toplevel` to find the repo root, then looks for `wiki/` there. Falls back to `./wiki` in the current directory.
+
+### Library Modules
+
+**`lib/server.js`** - HTTP server with routing and static export
+- `startServer(wikiDir, port, open)` - Starts the HTTP server
+- `exportSite(wikiDir, outputDir)` - Generates static HTML files
+
+**`lib/renderer.js`** - Markdown rendering pipeline
+- Configures markdown-it with wikilink support
+- Handles frontmatter extraction
+
+**`lib/scanner.js`** - Wiki page scanner and frontmatter parser
+- Scans wiki directory for pages
+- Parses YAML frontmatter
+- Builds title-to-path mappings for wikilink resolution
+
+**`lib/highlight.js`** - Syntax highlighting for code blocks
+- Language-aware code highlighting
+
+**`lib/template.js`** - HTML template and styling
+- Sidebar navigation with pages grouped by type
+- Client-side search (Ctrl+K / Cmd+K)
+- Dark mode support (CSS media query)
+- Responsive layout
 
 ### Server Features
 
-1. **Markdown rendering** - Uses markdown-it with HTML, linkify, and typographer enabled (`serve.js:18-23`)
-2. **Wikilink support** - Resolves `[[Page Name]]` syntax to proper links (`serve.js:27-39`)
-3. **Dark mode** - CSS media query for `prefers-color-scheme: dark` (`serve.js:162-170`)
-4. **Page index** - Auto-generated list at `/index` (`serve.js:242-290`)
-5. **Static file serving** - Serves llms.txt, .index.json directly (`serve.js:355-366`)
-
-### Key Functions
-
-**`parseFrontmatter(content)`** (`serve.js:89-118`)
-- Simple YAML parsing for page frontmatter
-- Handles title, tags, type fields
-
-**`resolveWikilinks(content)`** (`serve.js:121-127`)
-- Converts `[[Target]]` or `[[Target|display]]` to HTML links
-- Uses titleToPath map built from .index.json
-
-**`renderPage(pagePath)`** (`serve.js:130-239`)
-- Loads markdown file, parses frontmatter
-- Resolves wikilinks, renders to HTML
-- Returns complete HTML document with styling
-
-**`renderIndex()`** (`serve.js:242-290`)
-- Scans wiki directory recursively
-- Generates HTML page listing all wiki pages
+1. **Sidebar navigation** - Pages grouped by type (overview, concepts, guides, reference)
+2. **Full-text search** - Client-side search triggered by Ctrl+K / Cmd+K
+3. **Wikilink support** - Resolves `[[Page Name]]` syntax to proper links
+4. **Dark mode** - CSS media query for `prefers-color-scheme: dark`
+5. **Syntax highlighting** - Language-aware code block highlighting
+6. **Static export** - Generate standalone HTML files with `--export`
 
 ### Wikilink Resolution
 
-From `serve.js:79-86`:
-```javascript
-const titleToPath = {};
-for (const [slug, page] of Object.entries(wikiIndex.pages || {})) {
-    titleToPath[page.title.toLowerCase()] = slug;
-    titleToPath[slug] = slug;
-    for (const alias of (page.aliases || [])) {
-        titleToPath[alias.toLowerCase()] = slug;
-    }
-}
-```
+The scanner builds a title-to-path map from `.index.json`:
 
 Resolution order:
 1. Exact title match (case-insensitive)
@@ -1192,7 +1196,7 @@ Resolution order:
 
 ### Export Mode
 
-When `--export` flag is set (`serve.js:293-338`):
+When `--export` flag is set:
 1. Creates output directory
 2. Recursively processes wiki directory
 3. Renders each .md file to .html
@@ -1210,18 +1214,11 @@ When `--export` flag is set (`serve.js:293-338`):
 | `/llms.txt` | Raw llms.txt content |
 | `/.index.json` | Raw index JSON |
 
-### Styling
-
-Inline CSS with CSS custom properties for theming (`serve.js:154-224`):
-- Light mode: white background, dark text
-- Dark mode: dark background, light text
-- Wikilinks styled with dashed underline
-
 ---
 
 ## Dependencies
 
-**package.json** (`plugins/agent-wiki/package.json`):
+**Root package.json** (npm package):
 ```json
 {
   "dependencies": {
@@ -1231,15 +1228,27 @@ Inline CSS with CSS custom properties for theming (`serve.js:154-224`):
 }
 ```
 
-**Python requirements**:
-- Python 3.8+
-- PyYAML (`pip install pyyaml`)
+**Plugin package.json** (`plugins/autowiki/package.json`):
+```json
+{
+  "dependencies": {
+    "markdown-it": "^14.0.0",
+    "markdown-it-wikilinks": "^1.2.0"
+  }
+}
+```
+
+No Python dependencies are required.
 
 ## Code References
 
-- `plugins/agent-wiki/scripts/generate-llms.py` - llms.txt generator (275 lines)
-- `plugins/agent-wiki/scripts/serve.js` - Wiki server (397 lines)
-- `plugins/agent-wiki/package.json` - Node.js dependencies
+- `plugins/autowiki/scripts/generate-llms.js` - llms.txt generator (304 lines)
+- `bin/autowiki.js` - CLI entry point (89 lines)
+- `lib/server.js` - HTTP server
+- `lib/renderer.js` - Markdown rendering
+- `lib/scanner.js` - Page scanning and frontmatter
+- `lib/highlight.js` - Code highlighting
+- `lib/template.js` - HTML template and styles
 
 
 ================================================================================

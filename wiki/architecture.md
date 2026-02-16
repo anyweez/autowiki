@@ -7,19 +7,21 @@ related:
   - "[[Agents]]"
   - "[[Configuration]]"
 sources:
-  - plugins/agent-wiki/
+  - plugins/autowiki/
+  - bin/
+  - lib/
 ---
 
 # Architecture
 
-The agent-wiki plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content, supported by utility scripts for serving and indexing.
+autowiki has two main components: a **Claude Code plugin** (`plugins/autowiki/`) that generates and maintains wiki content, and an **npm package** (`bin/` + `lib/`) that serves the wiki as a website. The plugin follows a command-agent-script architecture where user commands orchestrate specialized agents that produce wiki content, supported by utility scripts for indexing.
 
 ## System Flow
 
-### Initialization Flow (/agent-wiki:init)
+### Initialization Flow (/autowiki:init)
 
 ```
-1. User runs /agent-wiki:init
+1. User runs /autowiki:init
 2. Command handler (commands/init.md) executes
 3. Pre-flight: Check wiki/ doesn't exist
 4. Create default wiki/.config.yml
@@ -29,14 +31,14 @@ The agent-wiki plugin follows a command-agent-script architecture where user com
 8. Collect explorer outputs
 9. Launch wiki-coordinator agent
 10. Coordinator writes wiki pages
-11. Run generate-llms.py
+11. Run generate-llms.js
 12. Report completion
 ```
 
-### Update Flow (/agent-wiki:update)
+### Update Flow (/autowiki:update)
 
 ```
-1. User runs /agent-wiki:update (or auto-triggered)
+1. User runs /autowiki:update (or auto-triggered)
 2. Command handler (commands/update.md) executes
 3. Pre-flight: Check wiki/ exists
 4. Detect changes via git diff since wiki/.last-update
@@ -57,10 +59,10 @@ Commands are markdown files with embedded instructions that Claude Code executes
 
 | File | Command | Role |
 |------|---------|------|
-| `commands/init.md` | `/agent-wiki:init` | Orchestrates full wiki creation |
-| `commands/update.md` | `/agent-wiki:update` | Orchestrates incremental updates |
-| `commands/reorganize.md` | `/agent-wiki:reorganize` | Analyzes and restructures wiki |
-| `commands/serve.md` | `/agent-wiki:serve` | Starts local web server |
+| `commands/init.md` | `/autowiki:init` | Orchestrates full wiki creation |
+| `commands/update.md` | `/autowiki:update` | Orchestrates incremental updates |
+| `commands/reorganize.md` | `/autowiki:reorganize` | Analyzes and restructures wiki |
+| `commands/serve.md` | `/autowiki:serve` | Deprecated, redirects to `npx autowiki` |
 
 ### Agents Layer
 
@@ -71,14 +73,26 @@ Agents are specialized sub-agents launched by commands to perform focused tasks.
 | Wiki Explorer | Explore code partition | Directory list, context | Concept list, code refs |
 | Wiki Coordinator | Synthesize findings | Explorer outputs | Wiki pages, index |
 
+### npm Package (Web Server)
+
+The web server is distributed as an npm package for browsing wikis locally.
+
+| File | Purpose |
+|------|---------|
+| `bin/autowiki.js` | CLI entry point, argument parsing, wiki directory auto-detection |
+| `lib/server.js` | HTTP server with routing, wikilink resolution, static export |
+| `lib/renderer.js` | Markdown rendering pipeline |
+| `lib/scanner.js` | Wiki page scanner and frontmatter parser |
+| `lib/highlight.js` | Syntax highlighting for code blocks |
+| `lib/template.js` | HTML template with sidebar, search, dark mode styling |
+
 ### Scripts Layer
 
 Utility scripts that support wiki functionality.
 
 | Script | Language | Purpose |
 |--------|----------|---------|
-| `generate-llms.py` | Python | Generate llms.txt index files |
-| `serve.js` | Node.js | HTTP server with wikilink support |
+| `generate-llms.js` | Node.js | Generate llms.txt index files |
 
 ### Data Layer
 
@@ -94,6 +108,13 @@ Generated files that comprise the wiki.
 | `wiki/*.md` | Documentation pages |
 
 ## Key Design Decisions
+
+### Two-Part Distribution
+
+The project is split into a Claude Code plugin (for wiki generation) and an npm package (for wiki viewing). This allows:
+- Wiki generation to happen within Claude Code's agent framework
+- Wiki browsing to work independently via `npx autowiki` with zero configuration
+- The generated markdown to be useful on its own (for AI agents via `llms.txt`)
 
 ### Parallel Exploration
 
@@ -120,7 +141,7 @@ Pages connect via `[[wikilinks]]` resolved at render time:
 2. Check aliases in `.index.json`
 3. Fall back to slugified filename
 
-See `scripts/serve.js:121-127` for resolution logic.
+See `lib/scanner.js` for resolution logic.
 
 ## Extension Points
 

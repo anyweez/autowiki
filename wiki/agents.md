@@ -6,16 +6,16 @@ related:
   - "[[Commands]]"
   - "[[Architecture]]"
 sources:
-  - plugins/agent-wiki/agents/
+  - plugins/autowiki/agents/
 ---
 
 # Agents
 
-The agent-wiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation. These agents are defined as markdown instruction files that Claude Code launches as Task sub-agents.
+The autowiki plugin uses two specialized sub-agents to explore codebases and synthesize documentation. These agents are defined as markdown instruction files that Claude Code launches as Task sub-agents.
 
 ## Wiki Explorer Agent
 
-**File**: `plugins/agent-wiki/agents/wiki-explorer.md`
+**File**: `plugins/autowiki/agents/wiki-explorer.md`
 
 The explorer agent analyzes assigned code partitions and produces structured findings for the coordinator.
 
@@ -103,7 +103,7 @@ See `wiki-explorer.md:126-138`.
 
 ## Wiki Coordinator Agent
 
-**File**: `plugins/agent-wiki/agents/wiki-coordinator.md`
+**File**: `plugins/autowiki/agents/wiki-coordinator.md`
 
 The coordinator synthesizes explorer findings into cohesive wiki documentation.
 
@@ -198,5 +198,5 @@ Command
 
 ## Code References
 
-- `plugins/agent-wiki/agents/wiki-explorer.md` - Explorer instructions (156 lines)
-- `plugins/agent-wiki/agents/wiki-coordinator.md` - Coordinator instructions (269 lines)
+- `plugins/autowiki/agents/wiki-explorer.md` - Explorer instructions
+- `plugins/autowiki/agents/wiki-coordinator.md` - Coordinator instructions

@@ -7,19 +7,19 @@ related:
   - "[[Architecture]]"
 sources:
   - wiki/.config.yml
-  - plugins/agent-wiki/hooks/
-  - plugins/agent-wiki/.claude-plugin/
+  - plugins/autowiki/hooks/
+  - plugins/autowiki/.claude-plugin/
   - .claude-plugin/
 ---
 
 # Configuration
 
-The agent-wiki plugin uses several configuration files and data structures to control behavior, enable auto-updates, and support plugin distribution.
+The autowiki plugin uses several configuration files and data structures to control behavior, enable auto-updates, and support plugin distribution.
 
 ## Wiki Configuration
 
 **File**: `wiki/.config.yml`
-**Created by**: `/agent-wiki:init`
+**Created by**: `/autowiki:init`
 
 Controls wiki generation and update behavior.
 
@@ -93,7 +93,7 @@ JSON index mapping pages to sources for fast lookups and change detection.
 ```json
 {
   "version": 1,
-  "generated": "2024-01-19T12:00:00Z",
+  "generated": "2026-01-19T00:00:00Z",
   "pages": {
     "overview": {
       "path": "wiki/overview.md",
@@ -142,65 +142,44 @@ JSON index mapping pages to sources for fast lookups and change detection.
 
 The index is used by:
 - **Update command** - Maps changed files to affected pages (`commands/update.md:34-50`)
-- **serve.js** - Resolves wikilinks (`scripts/serve.js:68-86`)
+- **Web server** - Resolves wikilinks (`lib/scanner.js`)
 - **Reorganize command** - Analyzes structure (`commands/reorganize.md:12-13`)
 
 ---
 
 ## Post-Task Hook
 
-**File**: `plugins/agent-wiki/hooks/post-task.sh`
+**File**: `plugins/autowiki/hooks/post-task.sh`
 **Triggered by**: Claude Code after SubagentStop events
+**Configured in**: `plugins/autowiki/hooks/hooks.json`
 
 Detects if wiki updates are recommended after agent tasks complete.
+
+### Hook Registration
+
+From `hooks/hooks.json`:
+```json
+{
+  "description": "Wiki auto-update hooks",
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-task.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ### Behavior
 
 From `hooks/post-task.sh`:
-
-```bash
-#!/bin/bash
-set -e
-
-WIKI_DIR="wiki"
-CONFIG_FILE="$WIKI_DIR/.config.yml"
-
-# Check if wiki exists
-if [ ! -d "$WIKI_DIR" ]; then
-    exit 0  # No wiki, nothing to do
-fi
-
-# Check if auto-update is enabled
-if [ -f "$CONFIG_FILE" ]; then
-    AUTO_UPDATE=$(grep -E "^auto_update:" "$CONFIG_FILE" | awk '{print $2}')
-    if [ "$AUTO_UPDATE" = "false" ]; then
-        exit 0  # Auto-update disabled
-    fi
-fi
-
-# Check if there are relevant changes
-LAST_UPDATE_FILE="$WIKI_DIR/.last-update"
-if [ -f "$LAST_UPDATE_FILE" ]; then
-    LAST_UPDATE=$(cat "$LAST_UPDATE_FILE")
-    CHANGED_FILES=$(git diff --name-only "$LAST_UPDATE" HEAD 2>/dev/null || echo "")
-else
-    CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-fi
-
-# Filter out wiki and non-code files
-RELEVANT_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^wiki/" | grep -v "\.md$" | grep -v "\.txt$" || true)
-
-if [ -z "$RELEVANT_CHANGES" ]; then
-    exit 0  # No relevant code changes
-fi
-
-# Signal to Claude Code
-echo "WIKI_UPDATE_RECOMMENDED"
-echo "Changed files since last wiki update:"
-echo "$RELEVANT_CHANGES"
-```
-
-### Logic Flow
 
 1. Check wiki/ directory exists
 2. Check `auto_update: true` in config
@@ -212,17 +191,17 @@ echo "$RELEVANT_CHANGES"
 
 ## Plugin Manifest
 
-**File**: `plugins/agent-wiki/.claude-plugin/plugin.json`
+**File**: `plugins/autowiki/.claude-plugin/plugin.json`
 
 Registers the plugin with Claude Code.
 
 ```json
 {
-  "name": "agent-wiki",
+  "name": "autowiki",
   "description": "Maintains an auto-updating wiki for agent context about how repository components work",
-  "version": "1.0.2",
+  "version": "1.2.4",
   "author": {
-    "name": "Luke Segars"
+    "name": "anyweez"
   }
 }
 ```
@@ -238,46 +217,42 @@ Enables plugin distribution via Claude Code marketplace system.
 ```json
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "agent-wiki-marketplace",
-  "version": "1.0.0",
-  "description": "Local marketplace for agent-wiki plugin",
+  "name": "autowiki",
+  "version": "1.2.4",
+  "description": "Auto-updating wiki for agent context",
   "owner": {
-    "name": "Luke Segars",
-    "email": "luke@example.com"
+    "name": "anyweez"
   },
   "plugins": [
     {
-      "name": "agent-wiki",
+      "name": "autowiki",
       "description": "Maintains an auto-updating wiki for agent context",
-      "version": "1.0.2",
+      "version": "1.2.4",
       "author": {
-        "name": "Luke Segars"
+        "name": "anyweez"
       },
-      "source": "./plugins/agent-wiki",
+      "source": "./plugins/autowiki",
       "category": "productivity"
     }
   ]
 }
 ```
 
-### Installation Methods
+### Installation
 
-**From GitHub marketplace**:
-```bash
-/plugin marketplace add github:anyweez/agent-wiki
-/plugin install agent-wiki@anyweez/agent-wiki
+In Claude Code, run:
+
+```
+/plugins
 ```
 
-**From local directory**:
-```bash
-/plugin marketplace add /path/to/agent-wiki
-/plugin install agent-wiki@agent-wiki-marketplace
+Select **Add a marketplace**, then enter:
+
+```
+anyweez/autowiki
 ```
 
-**Direct plugin load**:
-```bash
-claude --plugin-dir /path/to/agent-wiki
-```
+Then select **autowiki** from the marketplace to install it.
 
 ---
 
@@ -303,7 +278,8 @@ git rev-parse HEAD > wiki/.last-update
 
 ## Code References
 
-- `wiki/.config.yml` - Wiki configuration (35 lines)
-- `plugins/agent-wiki/hooks/post-task.sh` - Post-task hook (45 lines)
-- `plugins/agent-wiki/.claude-plugin/plugin.json` - Plugin manifest
+- `wiki/.config.yml` - Wiki configuration
+- `plugins/autowiki/hooks/hooks.json` - Hook registration
+- `plugins/autowiki/hooks/post-task.sh` - Post-task hook
+- `plugins/autowiki/.claude-plugin/plugin.json` - Plugin manifest
 - `.claude-plugin/marketplace.json` - Marketplace config
