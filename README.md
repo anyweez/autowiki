@@ -26,9 +26,19 @@ The generated wiki is immediately useful for AI agents as raw markdown (plus `ll
 
 ### Install the Claude Code plugin
 
-```bash
-/install-plugin github:anyweez/autowiki
+In Claude Code, run:
+
 ```
+/plugins
+```
+
+Select **Add a marketplace**, then enter:
+
+```
+anyweez/autowiki
+```
+
+Then select **autowiki** from the marketplace to install it.
 
 ### Generate your wiki
 
